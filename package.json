@@ -1,0 +1,53 @@
+{
+  "name": "@kinginsun/mcp-drugsea",
+  "version": "0.2.0",
+  "description": "MCP server for DrugSea / Yaohai pharmaceutical databases: cross-db search, China marketed products (product_cn), and CDE registration review (reg_cn).",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-drugsea": "dist/index.js"
+  },
+  "homepage": "https://github.com/kinginsun/mcp-drugsea",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kinginsun/mcp-drugsea.git"
+  },
+  "license": "MIT",
+  "author": "kinginsun@CUHK",
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/*.js",
+    "prepare": "npm run build",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "cli",
+    "drugsea",
+    "yaohai",
+    "nmpa",
+    "cde",
+    "pharmaceutical"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "shx": "^0.3.4",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

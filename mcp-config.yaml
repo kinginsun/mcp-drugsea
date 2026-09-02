@@ -1,0 +1,93 @@
+version: 1
+tools:
+  yaohai-catalog:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 60000
+    description: "List Yaohai / DrugSea databases"
+  yaohai-search:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 60000
+    description: "Search a single Yaohai database"
+  yaohai-detail:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 60000
+    description: "Fetch one Yaohai record detail"
+  yaohai-global-search:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 60000
+    description: "Global drug panorama search"
+  yaohai-smart-search:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 60000
+    description: "Natural-language auto-routed Yaohai search"
+  product-cn-fields:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 10000
+    description: "List product_cn search/filter fields"
+  product-cn-search:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 60000
+    description: "Search China marketed products (product_cn)"
+  product-cn-facets:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 120000
+    description: "Facet distributions for product_cn"
+  product-cn-detail:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 60000
+    description: "product_cn record detail"
+  reg-cn-fields:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 10000
+    description: "List reg_cn search/filter fields"
+  reg-cn-search:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 60000
+    description: "Search China CDE registration review (reg_cn)"
+  reg-cn-facets:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 120000
+    description: "Facet distributions for reg_cn"
+  reg-cn-detail:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 60000
+    description: "reg_cn record detail"

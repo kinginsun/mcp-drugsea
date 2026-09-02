@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "servers": {
+    "drugsea": {
+      "type": "stdio",
+      "command": {
+        "args": ["npx", "@kinginsun/mcp-drugsea"],
+        "env": {
+          "YAOHAI_MCP_TOKEN": "${YAOHAI_MCP_TOKEN}"
+        }
+      },
+      "capabilities": {
+        "tools": {
+          "yaohai-catalog": {
+            "description": "List Yaohai / DrugSea databases"
+          },
+          "yaohai-search": {
+            "description": "Search a single Yaohai database"
+          },
+          "yaohai-detail": {
+            "description": "Fetch one Yaohai record detail"
+          },
+          "yaohai-global-search": {
+            "description": "Global drug panorama search"
+          },
+          "yaohai-smart-search": {
+            "description": "Natural-language auto-routed Yaohai search"
+          },
+          "product-cn-fields": {
+            "description": "List product_cn search/filter fields"
+          },
+          "product-cn-search": {
+            "description": "Search China marketed products (product_cn)"
+          },
+          "product-cn-facets": {
+            "description": "Facet distributions for product_cn"
+          },
+          "product-cn-detail": {
+            "description": "product_cn record detail"
+          },
+          "reg-cn-fields": {
+            "description": "List reg_cn search/filter fields"
+          },
+          "reg-cn-search": {
+            "description": "Search China CDE registration review (reg_cn)"
+          },
+          "reg-cn-facets": {
+            "description": "Facet distributions for reg_cn"
+          },
+          "reg-cn-detail": {
+            "description": "reg_cn record detail"
+          }
+        }
+      }
+    }
+  }
+}

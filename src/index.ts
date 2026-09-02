@@ -1,0 +1,530 @@
+#!/usr/bin/env node
+
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+import {
+  clampLimit,
+  clampOffset,
+  fetchDetail,
+  fetchFacets,
+  listSearch,
+  mcpDbDetail,
+  mcpDbSearch,
+  prefersMcpListApi,
+  yaohaiPost,
+} from "./api.js";
+import {
+  ATC_HINT,
+  PRODUCT_CN_COMMON_FIELDS,
+  PRODUCT_CN_DETAIL_PATH,
+  PRODUCT_CN_FACET_FIELDS,
+  PRODUCT_CN_FACET_PREFIX,
+  PRODUCT_CN_VIEW_TYPES,
+  REG_CN_COMMON_FIELDS,
+  REG_CN_DETAIL_PATH,
+  REG_CN_FACET_FIELDS,
+  REG_CN_FACET_PREFIX,
+  REG_CN_VIEW_TYPES,
+  applyProductCnDefaults,
+  applyRegCnDefaults,
+  productCnSearchPath,
+  regCnSearchPath,
+} from "./fields.js";
+import type { QueryObject } from "./types.js";
+import {
+  EmptyObjectSchema,
+  ProductCnDetailSchema,
+  ProductCnFacetsSchema,
+  ProductCnSearchSchema,
+  RegCnDetailSchema,
+  RegCnFacetsSchema,
+  RegCnSearchSchema,
+  YaohaiCatalogSchema,
+  YaohaiDetailSchema,
+  YaohaiGlobalSearchSchema,
+  YaohaiSearchSchema,
+  YaohaiSmartSearchSchema,
+} from "./types.js";
+
+const PACKAGE_VERSION = "0.2.0";
+
+const YAOHAI_LIMIT_MAX = 50;
+const YAOHAI_LIMIT_DEFAULT = 10;
+const CN_LIMIT_MAX = 100;
+const CN_LIMIT_DEFAULT = 20;
+
+const QUERY_PROP = {
+  type: "object",
+  additionalProperties: true,
+  description:
+    "Search/filter fields. Values may be string, number, or string[] (repeat the key for ConditionSearch multiple). Date: \"YYYY-MM-DD to YYYY-MM-DD\". Range: \"min to max\".",
+} as const;
+
+const PRESENTATION_HINT =
+  "If total > 20, summarize in chat (about 5–10 sample rows) instead of dumping the full table. Include frontend source links when present.";
+
+const ROUTING_HINT =
+  "Already-marketed China products (国药准字, 批准文号, 上市, 医保/集采) → product-cn-* tools. R&D / CDE pipeline (在研, 受理号, 审评, 尚未上市) → reg-cn-* tools. Other DBs (医保 yibao, 基药 jiyao, 集采 jicai, trials, global) → yaohai-*. Do not use yaohai-search with dbname product_cn or reg_cn when the dedicated tools apply.";
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  process.exit(1);
+});
+
+const server = new Server(
+  {
+    name: "mcp-drugsea",
+    version: PACKAGE_VERSION,
+  },
+  {
+    capabilities: {
+      resources: {},
+      tools: {},
+    },
+  }
+);
+
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
+      {
+        name: "yaohai-catalog",
+        description:
+          "List Yaohai / DrugSea databases (60+). Filter by category or keyword to pick a dbname for yaohai-search. " +
+          ROUTING_HINT,
+        inputSchema: {
+          type: "object",
+          properties: {
+            category: {
+              type: "string",
+              description:
+                "Optional category, e.g. 市场准入, 上市情报, 注册情报, 临床试验, NMPA基础库",
+            },
+            q: {
+              type: "string",
+              description: "Optional keyword filter on title, id, or keywords",
+            },
+          },
+        },
+      },
+      {
+        name: "yaohai-search",
+        description:
+          "Search a single Yaohai database by dbname (from yaohai-catalog). Default limit 10, max 50. " +
+          "Use query fields from the catalog's search_fields. " +
+          ROUTING_HINT +
+          " " +
+          PRESENTATION_HINT,
+        inputSchema: {
+          type: "object",
+          properties: {
+            dbname: {
+              type: "string",
+              description:
+                "Database id, e.g. yibao, jiyao, jicai, jicai_mulu, fda_dmf. Prefer product-cn-search / reg-cn-search instead of product_cn / reg_cn.",
+            },
+            query: QUERY_PROP,
+            limit: {
+              type: "number",
+              description: `Row cap (default ${YAOHAI_LIMIT_DEFAULT}, max ${YAOHAI_LIMIT_MAX})`,
+            },
+            offset: { type: "number", description: "Pagination offset (default 0)" },
+          },
+          required: ["dbname"],
+        },
+      },
+      {
+        name: "yaohai-detail",
+        description:
+          "Fetch one record's detail from a Yaohai database. Requires dbname + encrypted id from yaohai-search items. Skip if catalog says has_detail is false (use list fields instead).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            dbname: { type: "string", description: "Database id" },
+            id: { type: "string", description: "Record id from search results" },
+          },
+          required: ["dbname", "id"],
+        },
+      },
+      {
+        name: "yaohai-global-search",
+        description:
+          "Global drug panorama search (global_search). Pass q as the search term, or query.term. " +
+          PRESENTATION_HINT,
+        inputSchema: {
+          type: "object",
+          properties: {
+            q: { type: "string", description: "Search term (maps to query.term)" },
+            query: QUERY_PROP,
+            limit: {
+              type: "number",
+              description: `Row cap (default ${YAOHAI_LIMIT_DEFAULT}, max ${YAOHAI_LIMIT_MAX})`,
+            },
+            offset: { type: "number", description: "Pagination offset (default 0)" },
+          },
+        },
+      },
+      {
+        name: "yaohai-smart-search",
+        description:
+          "Natural-language Yaohai search: auto-routes the question to up to 3 databases. Use when the user question is broad or the target DB is unclear. " +
+          ROUTING_HINT,
+        inputSchema: {
+          type: "object",
+          properties: {
+            q: { type: "string", description: "Natural language question" },
+            query: QUERY_PROP,
+            limit: {
+              type: "number",
+              description: `Row cap (default ${YAOHAI_LIMIT_DEFAULT}, max ${YAOHAI_LIMIT_MAX})`,
+            },
+          },
+          required: ["q"],
+        },
+      },
+      {
+        name: "product-cn-fields",
+        description:
+          "List CommonSearch and ConditionSearch field keys for 国内上市药品 (product_cn). Call before product-cn-search / product-cn-facets if unsure which filters exist.",
+        inputSchema: { type: "object", properties: {} },
+      },
+      {
+        name: "product-cn-search",
+        description:
+          "Search already-marketed China drugs (product_cn / 国药准字 / 批准文号 / NMPA listed). " +
+          "Default search_mode=3 (partial). first_approve_date = first listing date; approve_date = latest re-registration (not first listing). " +
+          ATC_HINT +
+          " Default limit 20, max 100. " +
+          "Not for R&D pipeline — use reg-cn-search. " +
+          PRESENTATION_HINT,
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              ...QUERY_PROP,
+              description:
+                QUERY_PROP.description +
+                " Common: item, drug_name, manufacture, license_holder, specification, std_specification, auth_num, indication, general_name_cn, only_active (1), search_mode (1/2/3). Condition examples: ATC_code, national_yibao, std_dosage_form, source, first_approve_date.",
+            },
+            limit: {
+              type: "number",
+              description: `Row cap (default ${CN_LIMIT_DEFAULT}, max ${CN_LIMIT_MAX})`,
+            },
+            offset: { type: "number", description: "Pagination offset (default 0)" },
+            view_type: {
+              type: "string",
+              enum: [...PRODUCT_CN_VIEW_TYPES],
+              description: "eslist (by approval, default), list_by_drug_name, list_by_manufacture",
+            },
+          },
+        },
+      },
+      {
+        name: "product-cn-facets",
+        description:
+          "Facet distributions for 国内上市药品 after a keyword query. facets is required (do not request all 22 — slow). " +
+          "Recommended: ATC_code, drug_type, national_yibao, std_dosage_form, source. " +
+          ATC_HINT,
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: QUERY_PROP,
+            facets: {
+              type: "array",
+              items: { type: "string" },
+              description:
+                "Facet field keys to fetch. Recommended: ATC_code, drug_type, national_yibao, std_dosage_form, source.",
+            },
+          },
+          required: ["facets"],
+        },
+      },
+      {
+        name: "product-cn-detail",
+        description:
+          "Detail for one product_cn row. id is the encrypted id from product-cn-search items (not the raw 批准文号).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "Encrypted record id from search results" },
+          },
+          required: ["id"],
+        },
+      },
+      {
+        name: "reg-cn-fields",
+        description:
+          "List CommonSearch and ConditionSearch field keys for 药品注册审评 (reg_cn / CDE). Call before reg-cn-search / reg-cn-facets if unsure which filters exist.",
+        inputSchema: { type: "object", properties: {} },
+      },
+      {
+        name: "reg-cn-search",
+        description:
+          "Search China drug registration / CDE review (reg_cn): 在研, 受理号, 申报, 审评进度, not-yet-listed. " +
+          "Default rows_excluded=1 (drop 备案), search_mode=1. " +
+          ATC_HINT +
+          " Default limit 20, max 100. Not for already-marketed products — use product-cn-search. " +
+          PRESENTATION_HINT,
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              ...QUERY_PROP,
+              description:
+                QUERY_PROP.description +
+                " Common: item, drug_name, enterprise, slh, indication, rows_excluded, search_mode. Condition examples: ATC_code, rd_status, transact_status, register_type, drug_type, undertake_date.",
+            },
+            limit: {
+              type: "number",
+              description: `Row cap (default ${CN_LIMIT_DEFAULT}, max ${CN_LIMIT_MAX})`,
+            },
+            offset: { type: "number", description: "Pagination offset (default 0)" },
+            view_type: {
+              type: "string",
+              enum: [...REG_CN_VIEW_TYPES],
+              description: "eslist (default), list_by_drug_name, list_by_enterprise",
+            },
+          },
+        },
+      },
+      {
+        name: "reg-cn-facets",
+        description:
+          "Facet distributions for 药品注册审评. facets is required (do not request all dimensions — slow). " +
+          "Recommended: ATC_code, rd_status, drug_type, transact_status, register_type. " +
+          ATC_HINT,
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: QUERY_PROP,
+            facets: {
+              type: "array",
+              items: { type: "string" },
+              description:
+                "Facet field keys to fetch. Recommended: ATC_code, rd_status, drug_type, transact_status, register_type.",
+            },
+          },
+          required: ["facets"],
+        },
+      },
+      {
+        name: "reg-cn-detail",
+        description:
+          "Detail for one reg_cn acceptance/review row. id is the encrypted id from reg-cn-search items (not the raw 受理号).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "Encrypted record id from search results" },
+          },
+          required: ["id"],
+        },
+      },
+    ],
+  };
+});
+
+function encodeId(id: string): string {
+  return encodeURIComponent(id).replace(/!/g, "%21");
+}
+
+function asQuery(query: QueryObject | undefined): QueryObject {
+  return { ...(query ?? {}) };
+}
+
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+
+  try {
+    switch (name) {
+      case "yaohai-catalog": {
+        const validated = YaohaiCatalogSchema.parse(args ?? {});
+        const body: Record<string, unknown> = {};
+        if (validated.category) body.category = validated.category;
+        if (validated.q) body.q = validated.q;
+        const content = await yaohaiPost("/g/mcp/yaohai/catalog", body);
+        return ok(content);
+      }
+      case "yaohai-search": {
+        const validated = YaohaiSearchSchema.parse(args);
+        const content = await yaohaiPost("/g/mcp/yaohai/search", {
+          dbname: validated.dbname,
+          query: asQuery(validated.query),
+          limit: clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX),
+          offset: clampOffset(validated.offset),
+        });
+        return ok(content);
+      }
+      case "yaohai-detail": {
+        const validated = YaohaiDetailSchema.parse(args);
+        const content = await yaohaiPost("/g/mcp/yaohai/detail", {
+          dbname: validated.dbname,
+          id: validated.id,
+        });
+        return ok(content);
+      }
+      case "yaohai-global-search": {
+        const validated = YaohaiGlobalSearchSchema.parse(args ?? {});
+        const query = asQuery(validated.query);
+        if (validated.q && (query.term === undefined || query.term === "")) {
+          query.term = validated.q;
+        }
+        const content = await yaohaiPost("/g/mcp/yaohai/global-search", {
+          query,
+          limit: clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX),
+          offset: clampOffset(validated.offset),
+        });
+        return ok(content);
+      }
+      case "yaohai-smart-search": {
+        const validated = YaohaiSmartSearchSchema.parse(args);
+        const body: Record<string, unknown> = {
+          q: validated.q,
+          limit: clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX),
+        };
+        if (validated.query) {
+          body.query = validated.query;
+        }
+        const content = await yaohaiPost("/g/mcp/yaohai/smart-search", body);
+        return ok(content);
+      }
+      case "product-cn-fields": {
+        EmptyObjectSchema.parse(args ?? {});
+        return ok({
+          common_search: [...PRODUCT_CN_COMMON_FIELDS],
+          condition_search: PRODUCT_CN_FACET_FIELDS,
+          view_types: [...PRODUCT_CN_VIEW_TYPES],
+        });
+      }
+      case "product-cn-search": {
+        const validated = ProductCnSearchSchema.parse(args ?? {});
+        const viewType = validated.view_type ?? "eslist";
+        const query = applyProductCnDefaults(asQuery(validated.query)) as QueryObject;
+        const limit = clampLimit(validated.limit, CN_LIMIT_DEFAULT, CN_LIMIT_MAX);
+        const offset = clampOffset(validated.offset);
+        const content = prefersMcpListApi()
+          ? await mcpDbSearch({
+              dbname: "product_cn",
+              query,
+              limit,
+              offset,
+              viewType,
+            })
+          : await listSearch({
+              path: productCnSearchPath(viewType),
+              query,
+              limit,
+              offset,
+              viewType,
+            });
+        return ok(content);
+      }
+      case "product-cn-facets": {
+        const validated = ProductCnFacetsSchema.parse(args);
+        const query = applyProductCnDefaults(asQuery(validated.query)) as QueryObject;
+        const content = await fetchFacets({
+          prefix: PRODUCT_CN_FACET_PREFIX,
+          query,
+          fields: validated.facets,
+          catalog: PRODUCT_CN_FACET_FIELDS,
+        });
+        return ok(content);
+      }
+      case "product-cn-detail": {
+        const validated = ProductCnDetailSchema.parse(args);
+        const content = prefersMcpListApi()
+          ? await mcpDbDetail("product_cn", validated.id)
+          : await fetchDetail(
+              `${PRODUCT_CN_DETAIL_PATH}/${encodeId(validated.id)}`,
+              validated.id
+            );
+        return ok(content);
+      }
+      case "reg-cn-fields": {
+        EmptyObjectSchema.parse(args ?? {});
+        return ok({
+          common_search: [...REG_CN_COMMON_FIELDS],
+          condition_search: REG_CN_FACET_FIELDS,
+          view_types: [...REG_CN_VIEW_TYPES],
+        });
+      }
+      case "reg-cn-search": {
+        const validated = RegCnSearchSchema.parse(args ?? {});
+        const viewType = validated.view_type ?? "eslist";
+        const query = applyRegCnDefaults(asQuery(validated.query)) as QueryObject;
+        const limit = clampLimit(validated.limit, CN_LIMIT_DEFAULT, CN_LIMIT_MAX);
+        const offset = clampOffset(validated.offset);
+        const content = prefersMcpListApi()
+          ? await mcpDbSearch({
+              dbname: "reg_cn",
+              query,
+              limit,
+              offset,
+              viewType,
+            })
+          : await listSearch({
+              path: regCnSearchPath(viewType),
+              query,
+              limit,
+              offset,
+              viewType,
+            });
+        return ok(content);
+      }
+      case "reg-cn-facets": {
+        const validated = RegCnFacetsSchema.parse(args);
+        const query = applyRegCnDefaults(asQuery(validated.query)) as QueryObject;
+        const content = await fetchFacets({
+          prefix: REG_CN_FACET_PREFIX,
+          query,
+          fields: validated.facets,
+          catalog: REG_CN_FACET_FIELDS,
+        });
+        return ok(content);
+      }
+      case "reg-cn-detail": {
+        const validated = RegCnDetailSchema.parse(args);
+        const content = prefersMcpListApi()
+          ? await mcpDbDetail("reg_cn", validated.id)
+          : await fetchDetail(
+              `${REG_CN_DETAIL_PATH}/${encodeId(validated.id)}`,
+              validated.id
+            );
+        return ok(content);
+      }
+      default:
+        throw new Error(`Unknown tool: ${name}`);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      content: [{ type: "text" as const, text: message }],
+      isError: true,
+    };
+  }
+});
+
+function ok(content: unknown) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(content) }],
+    isError: false,
+  };
+}
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+main().catch((error) => {
+  console.error("Fatal error in main():", error);
+  process.exit(1);
+});
