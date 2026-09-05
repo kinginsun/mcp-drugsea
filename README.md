@@ -38,6 +38,20 @@ Obtain a token from DrugSea / Yaohai (user account settings), then:
 export YAOHAI_MCP_TOKEN=ysk_your_token_here
 ```
 
+#### How to get a token from DrugSea (Yaohai)
+
+1. Open [https://db.drugsea.cn](https://db.drugsea.cn) in a browser.
+2. Log in with **WeChat QR scan** (微信扫码登录).
+3. Enter the **personal center** (个人中心).
+4. In the left sidebar, click **API Token**.
+5. Click **generate token** (生成 Token) and copy the result — it looks like `ysk_` + 32 hex characters.
+
+Notes:
+
+- Each account can generate up to **10 tokens**.
+- A token inherits the **same database permissions as its Yaohai account** — if your account cannot see a database, the token cannot either. If a tool call returns a permission error, check your account's subscription/permissions on db.drugsea.cn, not the MCP client.
+- Store the token in your MCP client's `env` (see below) or export it as `YAOHAI_MCP_TOKEN`. Never commit it to a repository.
+
 On db3, direct GET list routes may return encrypted payloads; this client auto-routes `product-cn-search` / `reg-cn-search` / detail through MCP POST when the base URL contains `db3.drugsea.cn`.
 
 ### Optional
@@ -108,7 +122,9 @@ xlsx export is not implemented in this MCP (v1 returns JSON samples only).
 | `yaohai-search` | `dbname`, `query?`, `limit?`, `offset?` | Default limit 10, max 50 |
 | `yaohai-detail` | `dbname`, `id` | Skip DBs with `has_detail: false` |
 | `yaohai-global-search` | `q?`, `query?`, `limit?`, `offset?` | `q` fills `query.term` |
-| `yaohai-smart-search` | `q`, `query?`, `limit?` | Auto-routes up to 3 DBs |
+| `yaohai-smart-search` | `q`, `query?`, `limit?` | Auto-routes up to 3 DBs; auto-fallback (see notes) |
+
+`yaohai-smart-search` fallback behavior: if the backend router matches no database, or matched databases return no rows, the client retries each matched DB with the individual tokens of the question (across the router's field plus the DB's catalog `search_fields`), then falls back to `yaohai-global-search`. Responses may therefore carry `fallback: "global-search"` or `results[].result.retry` / `results[].result.browse` markers.
 
 ### product_cn (marketed)
 
@@ -135,6 +151,139 @@ xlsx export is not implemented in this MCP (v1 returns JSON samples only).
 `view_type`: `eslist` (default) / `list_by_drug_name` / `list_by_enterprise`.
 
 `query` values may be string, number, or string arrays (ConditionSearch `multiple`). Dates: `"YYYY-MM-DD to YYYY-MM-DD"`. Ranges: `"min to max"`.
+
+## Quick start for AI Agents (install, configure, test)
+
+This section is a step-by-step playbook an AI agent (or a human) can follow to install, configure, and verify this MCP server end to end.
+
+### Prerequisites
+
+- Node.js >= 18 (`node -v`)
+- npm (`npm -v`)
+- A DrugSea / Yaohai personal token (`ysk_` + 32 hex chars) — see [How to get a token from DrugSea (Yaohai)](#how-to-get-a-token-from-drugsea-yaohai)
+
+### Step 0 — Register the server with your MCP client
+
+Add the server to your client config so it auto-starts. Example for Cursor (`~/.cursor/mcp.json`) — see [Configuration](#configuration) for other clients:
+
+```json
+{
+  "mcpServers": {
+    "drugsea": {
+      "command": "npx",
+      "args": ["-y", "@kinginsun/mcp-drugsea"],
+      "env": {
+        "YAOHAI_MCP_TOKEN": "ysk_your_token_here"
+      }
+    }
+  }
+}
+```
+
+Then reload MCP servers in the client (Cursor: Settings → MCP → refresh). The client should list **13 tools**.
+
+### Step 1 — Install (optional, for local/CLI use)
+
+Either run via npx on demand (no install needed), or install globally / from source:
+
+```bash
+# Option A: run without installing (what the MCP configs above do)
+npx -y @kinginsun/mcp-drugsea
+
+# Option B: global install
+npm install -g @kinginsun/mcp-drugsea
+npm ls -g @kinginsun/mcp-drugsea
+
+# Option C: from source (when developing)
+git clone https://github.com/kinginsun/mcp-drugsea.git
+cd mcp-drugsea
+npm install
+npm run build
+```
+
+### Step 2 — Configure the token
+
+```bash
+export YAOHAI_MCP_TOKEN=ysk_your_token_here
+```
+
+For MCP client usage, put the token in the client config `env` instead (Step 0). Sanity-check the format:
+
+```bash
+node -e "console.log(/^ysk_[0-9a-f]{32}$/i.test(process.env.YAOHAI_MCP_TOKEN) ? 'token format OK' : 'token format BAD')"
+```
+
+### Step 3 — Smoke test over stdio (JSON-RPC)
+
+The server speaks MCP over stdio. The recommended handshake sequence is `initialize` → `notifications/initialized` → request. Run this **outside** the package source directory (or use `node dist/index.js` inside it):
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"1.0"}}}' \
+  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+  | YAOHAI_MCP_TOKEN=$YAOHAI_MCP_TOKEN npx -y @kinginsun/mcp-drugsea \
+  | tail -1 | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const m=JSON.parse(d);console.log('tools:',m.result.tools.length)})"
+```
+
+Expected: `tools: 13`.
+
+One-liner variant without the handshake (also works with this server):
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
+  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea
+```
+
+### Step 4 — Test real tool calls
+
+```bash
+# Catalog lookup (no external DB data needed)
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"yaohai-catalog","arguments":{"q":"医保"}}}' \
+  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea
+
+# China marketed products search
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"product-cn-search","arguments":{"query":{"drug_name":"阿司匹林"},"limit":3}}}' \
+  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea
+
+# Smart search with automatic fallback (works even for plain drug names)
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"yaohai-smart-search","arguments":{"q":"阿司匹林","limit":3}}}' \
+  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea
+```
+
+Expected: each response has `"isError":false` and non-empty `content`. The smart-search call may return `fallback: "global-search"` with `total > 0` — that is the intended fallback, not an error.
+
+### Step 5 — Full 13-tool suite (from source)
+
+```bash
+git clone https://github.com/kinginsun/mcp-drugsea.git
+cd mcp-drugsea
+npm install && npm run build
+YAOHAI_MCP_TOKEN=ysk_your_token_here node scripts/test-all-tools.mjs
+```
+
+Expected final line: `--- Summary: 13 passed, 0 failed / 13 tool calls ---`.
+
+### Step 6 — Verify inside the MCP client
+
+After reloading MCP servers in the client, ask the agent:
+
+1. "List the drugsea tools" → should see 13 tools.
+2. "Search 阿司匹林 in product-cn" → should return rows with `total > 0`.
+3. "Smart search: PD-1 临床试验" → should return routed or fallback results without error.
+
+### Troubleshooting
+
+| Symptom | Cause / fix |
+|---------|-------------|
+| `Set YAOHAI_MCP_TOKEN to your personal DrugSea token…` | Token env var missing/empty — set it (Step 2 / client `env`) |
+| `YAOHAI_MCP_TOKEN must be a personal user token` | Token not `ysk_` + 32 hex — regenerate in personal center → API Token |
+| `401` / `Unauthorized` | Token revoked or expired — generate a new one |
+| Permission/forbidden on a specific DB | Token inherits account permissions — check the account's subscription on db.drugsea.cn |
+| `No matching database for query: …` from `yaohai-smart-search` | Should not happen on >= 0.2.1 (auto-fallback). Upgrade the package |
+| `mcp-drugsea: command not found` when running npx | You are inside the package source dir — run from another directory or use `node dist/index.js` |
+| Empty/encrypted payload from product/reg GET | Use default db3 base URL (auto MCP POST routing) or set `YAOHAI_USE_MCP_LIST=true` |
+| TLS errors on some hosts | Set `YAOHAI_VERIFY_SSL=false` |
 
 ## Manual stdio test
 
