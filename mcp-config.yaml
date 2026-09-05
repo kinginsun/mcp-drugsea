@@ -28,13 +28,6 @@ tools:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
     timeout: 60000
     description: "Global drug panorama search"
-  yaohai-smart-search:
-    type: stdio
-    command: ["node", "dist/index.js"]
-    env:
-      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
-    timeout: 60000
-    description: "Natural-language auto-routed Yaohai search"
   product-cn-fields:
     type: stdio
     command: ["node", "dist/index.js"]

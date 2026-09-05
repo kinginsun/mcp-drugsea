@@ -20,6 +20,10 @@ coverage
 .env.*.local
 tokens.local.env
 
+# npm credentials — a project-level .npmrc typically carries an _authToken
+# (e.g. an automation token used to publish without OTP). Never commit it.
+.npmrc
+
 logs
 *.log
 npm-debug.log*

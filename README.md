@@ -4,7 +4,7 @@ MCP (Model Context Protocol) stdio server for [DrugSea / Yaohai](https://db.drug
 
 The server forwards tool calls to **`https://db3.drugsea.cn/api`** with personal user token auth (`Authorization: Bearer ysk_…`). It covers:
 
-- **yaohai-*** — cross-database catalog / search / detail / global / smart-search (`POST /g/mcp/yaohai/*`)
+- **yaohai-*** — cross-database catalog / search / detail / global (`POST /g/mcp/yaohai/*`)
 - **product-cn-*** — already-marketed China products (search/detail via MCP on db3; facets via GET)
 - **reg-cn-*** — CDE registration / review pipeline (search/detail via MCP on db3; facets via GET)
 
@@ -102,7 +102,7 @@ On db3, direct GET list routes may return encrypted payloads; this client auto-r
 | R&D / CDE (在研, 受理号, 审评, 尚未上市) | `reg-cn-fields` → `reg-cn-search` / `reg-cn-facets` → `reg-cn-detail` |
 | Other DBs (医保 `yibao`, 基药 `jiyao`, 集采 `jicai`, trials, DMF, …) | `yaohai-catalog` → `yaohai-search` → `yaohai-detail` |
 | Global panorama | `yaohai-global-search` |
-| Unclear which DB | `yaohai-smart-search` |
+| Unclear which DB | `yaohai-catalog` (list DBs by keyword/category) → `yaohai-search`, or `yaohai-global-search` |
 
 Therapeutic-class queries (抗癌, 心血管, …): prefer ConditionSearch `ATC_code` (letter, e.g. `L` oncology, `C` cardiovascular, `J` anti-infectives, `N` nervous system). Confirm values with a facets tool when unsure.
 
@@ -122,9 +122,8 @@ xlsx export is not implemented in this MCP (v1 returns JSON samples only).
 | `yaohai-search` | `dbname`, `query?`, `limit?`, `offset?` | Default limit 10, max 50 |
 | `yaohai-detail` | `dbname`, `id` | Skip DBs with `has_detail: false` |
 | `yaohai-global-search` | `q?`, `query?`, `limit?`, `offset?` | `q` fills `query.term` |
-| `yaohai-smart-search` | `q`, `query?`, `limit?` | Auto-routes up to 3 DBs; auto-fallback (see notes) |
 
-`yaohai-smart-search` fallback behavior: if the backend router matches no database, or matched databases return no rows, the client retries each matched DB with the individual tokens of the question (across the router's field plus the DB's catalog `search_fields`), then falls back to `yaohai-global-search`. Responses may therefore carry `fallback: "global-search"` or `results[].result.retry` / `results[].result.browse` markers.
+When the target database is unclear, use `yaohai-catalog` (filter by `category` / `q`) to pick a `dbname`, then `yaohai-search`; or use `yaohai-global-search` for a cross-database panorama query.
 
 ### product_cn (marketed)
 
@@ -180,7 +179,7 @@ Add the server to your client config so it auto-starts. Example for Cursor (`~/.
 }
 ```
 
-Then reload MCP servers in the client (Cursor: Settings → MCP → refresh). The client should list **13 tools**.
+Then reload MCP servers in the client (Cursor: Settings → MCP → refresh). The client should list **12 tools**.
 
 ### Step 1 — Install (optional, for local/CLI use)
 
@@ -226,7 +225,7 @@ printf '%s\n' \
   | tail -1 | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const m=JSON.parse(d);console.log('tools:',m.result.tools.length)})"
 ```
 
-Expected: `tools: 13`.
+Expected: `tools: 12`.
 
 One-liner variant without the handshake (also works with this server):
 
@@ -246,14 +245,14 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"yaohai-cat
 echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"product-cn-search","arguments":{"query":{"drug_name":"阿司匹林"},"limit":3}}}' \
   | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea
 
-# Smart search with automatic fallback (works even for plain drug names)
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"yaohai-smart-search","arguments":{"q":"阿司匹林","limit":3}}}' \
+# Global panorama search
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"yaohai-global-search","arguments":{"q":"阿司匹林","limit":3}}}' \
   | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea
 ```
 
-Expected: each response has `"isError":false` and non-empty `content`. The smart-search call may return `fallback: "global-search"` with `total > 0` — that is the intended fallback, not an error.
+Expected: each response has `"isError":false` and non-empty `content`.
 
-### Step 5 — Full 13-tool suite (from source)
+### Step 5 — Full 12-tool suite (from source)
 
 ```bash
 git clone https://github.com/kinginsun/mcp-drugsea.git
@@ -262,15 +261,15 @@ npm install && npm run build
 YAOHAI_MCP_TOKEN=ysk_your_token_here node scripts/test-all-tools.mjs
 ```
 
-Expected final line: `--- Summary: 13 passed, 0 failed / 13 tool calls ---`.
+Expected final line: `--- Summary: 12 passed, 0 failed / 12 tool calls ---`.
 
 ### Step 6 — Verify inside the MCP client
 
 After reloading MCP servers in the client, ask the agent:
 
-1. "List the drugsea tools" → should see 13 tools.
+1. "List the drugsea tools" → should see 12 tools.
 2. "Search 阿司匹林 in product-cn" → should return rows with `total > 0`.
-3. "Smart search: PD-1 临床试验" → should return routed or fallback results without error.
+3. "Global search: PD-1" → should return panorama results without error.
 
 ### Troubleshooting
 
@@ -278,9 +277,8 @@ After reloading MCP servers in the client, ask the agent:
 |---------|-------------|
 | `Set YAOHAI_MCP_TOKEN to your personal DrugSea token…` | Token env var missing/empty — set it (Step 2 / client `env`) |
 | `YAOHAI_MCP_TOKEN must be a personal user token` | Token not `ysk_` + 32 hex — regenerate in personal center → API Token |
-| `401` / `Unauthorized` | Token revoked or expired — generate a new one |
+| `401` / `Unauthorized` (incl. backend's `invalid or missing X-Yaohai-Api-Key`) | Token expired or revoked — regenerate at db.drugsea.cn (personal center → API Token). The backend returns that `X-Yaohai-Api-Key` wording for **any** rejected credential; this client only ever sends `Authorization: Bearer`, so ignore the header name and replace the token. If you rotated the token, also `unset YAOHAI_MCP_TOKEN` — a stale exported value shadows the updated `.env`. |
 | Permission/forbidden on a specific DB | Token inherits account permissions — check the account's subscription on db.drugsea.cn |
-| `No matching database for query: …` from `yaohai-smart-search` | Should not happen on >= 0.2.1 (auto-fallback). Upgrade the package |
 | `mcp-drugsea: command not found` when running npx | You are inside the package source dir — run from another directory or use `node dist/index.js` |
 | Empty/encrypted payload from product/reg GET | Use default db3 base URL (auto MCP POST routing) or set `YAOHAI_USE_MCP_LIST=true` |
 | TLS errors on some hosts | Set `YAOHAI_VERIFY_SSL=false` |
@@ -301,6 +299,19 @@ echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"yaohai-cat
 echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"product-cn-search","arguments":{"query":{"drug_name":"阿司匹林"},"limit":3}}}' \
   | YAOHAI_MCP_TOKEN=ysk_your_token_here node dist/index.js
 ```
+
+## Releasing (maintainers)
+
+`publish.sh` releases the package to npm (which is what makes `npx -y @kinginsun/mcp-drugsea` work). It syncs `src/index.ts`'s `PACKAGE_VERSION` with `package.json`, builds clean, audits the tarball for leaked tokens, runs the 12-tool suite, commits + tags, then publishes and pushes.
+
+```bash
+npm login                # once, with rights on the @kinginsun scope
+./publish.sh --dry-run   # full rehearsal, no side effects
+./publish.sh --minor     # real release (0.2.1 → 0.3.0)
+./publish.sh --help      # all flags (--major, --version, --otp, --skip-tests, --note, --no-push)
+```
+
+The suite needs a **live** token: `publish.sh` probes the API first and, on rejection, reports it as a credential problem rather than a code regression. If you rotated `YAOHAI_MCP_TOKEN`, run `unset YAOHAI_MCP_TOKEN` first so the new `.env` value isn't shadowed by a stale exported one.
 
 ## Requirements
 

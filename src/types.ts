@@ -36,12 +36,6 @@ export const YaohaiGlobalSearchSchema = z.object({
   offset: z.coerce.number().int().optional(),
 });
 
-export const YaohaiSmartSearchSchema = z.object({
-  q: z.string().min(1),
-  query: QueryObjectSchema.optional(),
-  limit: z.coerce.number().int().optional(),
-});
-
 export const ProductViewTypeSchema = z.enum([
   "eslist",
   "list_by_drug_name",

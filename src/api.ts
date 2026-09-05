@@ -206,6 +206,24 @@ function parseApiJson(status: number, text: string): ApiResult {
   }
 
   if (status < 200 || status >= 300) {
+    // The DrugSea gateway answers every rejected credential with a generic
+    // "invalid or missing X-Yaohai-Api-Key" string, even though this client
+    // only ever sends `Authorization: Bearer <YAOHAI_MCP_TOKEN>`. Translate
+    // that misleading 401 into actionable advice instead of leaking the
+    // backend's wording.
+    if (status === 401 || status === 403) {
+      return {
+        ok: false,
+        status,
+        error:
+          `YAOHAI_MCP_TOKEN was rejected by the DrugSea API (HTTP ${status}). ` +
+          "The token is missing, expired, or revoked — regenerate it at " +
+          "db.drugsea.cn (personal center → API Token) and update YAOHAI_MCP_TOKEN. " +
+          "This client authenticates with `Authorization: Bearer` only; the backend's " +
+          "'X-Yaohai-Api-Key' wording is a generic message and does not apply here.",
+        raw: data,
+      };
+    }
     return {
       ok: false,
       status,

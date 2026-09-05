@@ -23,9 +23,6 @@
           "yaohai-global-search": {
             "description": "Global drug panorama search"
           },
-          "yaohai-smart-search": {
-            "description": "Natural-language auto-routed Yaohai search"
-          },
           "product-cn-fields": {
             "description": "List product_cn search/filter fields"
           },

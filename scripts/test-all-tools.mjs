@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Smoke-test all 13 mcp-drugsea tools via stdio JSON-RPC.
+ * Smoke-test all 12 mcp-drugsea tools via stdio JSON-RPC.
  * Usage: node scripts/test-all-tools.mjs
  * Reads env from process (set YAOHAI_MCP_TOKEN or source .env).
  */
@@ -17,14 +17,34 @@ const SERVER = join(ROOT, "dist/index.js");
 function loadDotEnv() {
   try {
     const raw = readFileSync(join(ROOT, ".env"), "utf8");
+    const shadowed = [];
     for (const line of raw.split("\n")) {
       const t = line.trim();
       if (!t || t.startsWith("#") || !t.includes("=")) continue;
       const [k, ...rest] = t.split("=");
       const v = rest.join("=").trim();
-      if (!process.env[k.trim()]) {
-        process.env[k.trim()] = v;
+      const key = k.trim();
+      if (!process.env[key]) {
+        process.env[key] = v;
+      } else if (process.env[key] !== v) {
+        // An exported value wins over .env (standard dotenv precedence).
+        // That is easy to trip over after rotating a token: the old exported
+        // value keeps shadowing the updated file. Surface it instead of
+        // silently testing with a stale credential.
+        shadowed.push(key);
       }
+    }
+    for (const key of shadowed) {
+      const envVal = process.env[key] || "";
+      const fileVal = (() => {
+        const line = raw.split("\n").find((l) => l.trim().startsWith(`${key}=`));
+        return line ? line.slice(line.indexOf("=") + 1).trim() : "";
+      })();
+      const mask = (s) => (s.length > 8 ? `${s.slice(0, 8)}…${s.slice(-4)}` : `${s.length} chars`);
+      console.error(
+        `[warn] ${key} from the environment (${mask(envVal)}) overrides .env (${mask(fileVal)}).\n` +
+          `       If you rotated this credential, run: unset ${key}`
+      );
     }
   } catch {
     // optional
@@ -138,7 +158,6 @@ async function main() {
     ["yaohai-catalog", { q: "医保" }],
     ["yaohai-search", { dbname: "yibao", query: { item: "阿司匹林" }, limit: 3 }],
     ["yaohai-global-search", { q: "PD-1", limit: 3 }],
-    ["yaohai-smart-search", { q: "医保目录 阿司匹林", limit: 3 }],
     ["product-cn-fields", {}],
     ["product-cn-search", { query: { drug_name: "阿司匹林" }, limit: 3 }],
     ["product-cn-facets", {

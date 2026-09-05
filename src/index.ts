@@ -7,7 +7,6 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import {
-  ApiError,
   clampLimit,
   clampOffset,
   fetchDetail,
@@ -48,10 +47,9 @@ import {
   YaohaiDetailSchema,
   YaohaiGlobalSearchSchema,
   YaohaiSearchSchema,
-  YaohaiSmartSearchSchema,
 } from "./types.js";
 
-const PACKAGE_VERSION = "0.2.0";
+const PACKAGE_VERSION = "0.3.0";
 
 const YAOHAI_LIMIT_MAX = 50;
 const YAOHAI_LIMIT_DEFAULT = 10;
@@ -172,25 +170,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             offset: { type: "number", description: "Pagination offset (default 0)" },
           },
-        },
-      },
-      {
-        name: "yaohai-smart-search",
-        description:
-          "Natural-language Yaohai search: auto-routes the question to up to 3 databases. Use when the user question is broad or the target DB is unclear. " +
-          "Falls back to global search when the router matches nothing or finds no rows. " +
-          ROUTING_HINT,
-        inputSchema: {
-          type: "object",
-          properties: {
-            q: { type: "string", description: "Natural language question" },
-            query: QUERY_PROP,
-            limit: {
-              type: "number",
-              description: `Row cap (default ${YAOHAI_LIMIT_DEFAULT}, max ${YAOHAI_LIMIT_MAX})`,
-            },
-          },
-          required: ["q"],
         },
       },
       {
@@ -342,187 +321,6 @@ function asQuery(query: QueryObject | undefined): QueryObject {
   return { ...(query ?? {}) };
 }
 
-async function globalSearchContent(
-  q: string,
-  query: QueryObject | undefined,
-  limit: number
-): Promise<Record<string, unknown>> {
-  const gquery = asQuery(query);
-  if (q && (gquery.term === undefined || gquery.term === "")) {
-    gquery.term = q;
-  }
-  const content = await yaohaiPost("/g/mcp/yaohai/global-search", {
-    query: gquery,
-    limit,
-    offset: 0,
-  });
-  return content as Record<string, unknown>;
-}
-
-function allSmartResultsEmpty(content: unknown): boolean {
-  if (!content || typeof content !== "object") {
-    return true;
-  }
-  const results = (content as { results?: unknown }).results;
-  if (!Array.isArray(results) || results.length === 0) {
-    return true;
-  }
-  return results.every((entry) => {
-    const result = (entry as { result?: unknown })?.result;
-    if (!result || typeof result !== "object") {
-      return true;
-    }
-    const total = (result as { total?: unknown }).total;
-    return typeof total === "number" ? total === 0 : true;
-  });
-}
-
-/**
- * The backend router searches the entire question string in one field per DB,
- * which rarely matches (e.g. item="医保目录 阿司匹林" → 0 rows), and sometimes
- * picks a field the DB does not support (e.g. `item` on jicai). Retry each
- * empty matched DB with the individual tokens of the question across the
- * router's field plus the catalog's search_fields for that DB.
- */
-async function retrySmartResultsWithTokens(
-  content: Record<string, unknown>,
-  q: string,
-  limit: number
-): Promise<Record<string, unknown> | null> {
-  const results = content.results;
-  if (!Array.isArray(results)) {
-    return null;
-  }
-  const tokens = q.split(/\s+/).filter((t) => t && t !== q);
-  if (tokens.length === 0) {
-    return null;
-  }
-
-  const catalogFields = new Map<string, string[]>();
-  async function searchFieldsFor(dbname: string): Promise<string[]> {
-    if (catalogFields.has(dbname)) {
-      return catalogFields.get(dbname)!;
-    }
-    let keys: string[] = [];
-    try {
-      const cat = (await yaohaiPost("/g/mcp/yaohai/catalog", { q: dbname })) as {
-        databases?: Array<{ id?: string; search_fields?: Array<{ key?: string }> }>;
-      };
-      const db = (cat.databases ?? []).find((d) => d.id === dbname);
-      keys = (db?.search_fields ?? [])
-        .map((f) => f.key)
-        .filter((k): k is string => typeof k === "string");
-    } catch {
-      keys = [];
-    }
-    catalogFields.set(dbname, keys);
-    return keys;
-  }
-
-  let changed = false;
-  const patched: unknown[] = [];
-  for (const entry of results) {
-    const inner = (entry as { result?: unknown })?.result;
-    if (!inner || typeof inner !== "object") {
-      patched.push(entry);
-      continue;
-    }
-    const r = inner as Record<string, unknown>;
-    if (r.total !== 0 || typeof r.dbname !== "string") {
-      patched.push(entry);
-      continue;
-    }
-    const queryApplied = r.query_applied as Record<string, unknown> | undefined;
-    const appliedKeys = queryApplied ? Object.keys(queryApplied) : [];
-    const singleFieldWholeQuestion =
-      appliedKeys.length === 1 && queryApplied![appliedKeys[0]] === q;
-    if (!singleFieldWholeQuestion) {
-      patched.push(entry);
-      continue;
-    }
-    const routerField = appliedKeys[0];
-    const fields = [routerField, ...(await searchFieldsFor(r.dbname))];
-    const uniqueFields = [...new Set(fields)].slice(0, 6);
-    let replaced = false;
-    outer: for (const token of tokens.slice(0, 3)) {
-      for (const field of uniqueFields) {
-        try {
-          const retry = (await yaohaiPost("/g/mcp/yaohai/search", {
-            dbname: r.dbname,
-            query: { [field]: token },
-            limit,
-            offset: 0,
-          })) as Record<string, unknown>;
-          if (typeof retry.total === "number" && retry.total > 0) {
-            patched.push({
-              ...(entry as Record<string, unknown>),
-              result: { ...retry, retry: { token, field } },
-            });
-            changed = true;
-            replaced = true;
-            break outer;
-          }
-        } catch {
-          // ignore per-token retry errors; try next field/token
-        }
-      }
-    }
-    if (!replaced) {
-      patched.push(entry);
-    }
-  }
-  if (!changed) {
-    return null;
-  }
-  return { ...content, results: patched };
-}
-
-/**
- * Last resort when the router matched databases but every search came back
- * empty (e.g. the question is just a DB keyword like 集采): browse the matched
- * databases without a query so the caller still sees representative rows.
- */
-async function browseMatchedDatabases(
-  content: Record<string, unknown>,
-  limit: number
-): Promise<Record<string, unknown> | null> {
-  const matched = content.matched_databases;
-  if (!Array.isArray(matched) || matched.length === 0) {
-    return null;
-  }
-  const results: unknown[] = [];
-  for (const db of matched.slice(0, 3)) {
-    const id = (db as { id?: unknown })?.id;
-    if (typeof id !== "string") {
-      continue;
-    }
-    try {
-      const browse = (await yaohaiPost("/g/mcp/yaohai/search", {
-        dbname: id,
-        query: {},
-        limit,
-        offset: 0,
-      })) as Record<string, unknown>;
-      if (typeof browse.total === "number" && browse.total > 0) {
-        results.push({
-          score: (db as { score?: unknown }).score,
-          result: { ...browse, browse: true },
-        });
-      }
-    } catch {
-      // DB not browsable — skip
-    }
-  }
-  if (results.length === 0) {
-    return null;
-  }
-  return {
-    ...content,
-    results,
-    note: "Smart-search found no rows for the full question; showing sample rows from the matched databases instead.",
-  };
-}
-
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
@@ -566,62 +364,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           offset: clampOffset(validated.offset),
         });
         return ok(content);
-      }
-      case "yaohai-smart-search": {
-        const validated = YaohaiSmartSearchSchema.parse(args);
-        const limit = clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX);
-        const body: Record<string, unknown> = { q: validated.q, limit };
-        if (validated.query) {
-          body.query = validated.query;
-        }
-        try {
-          const content = await yaohaiPost("/g/mcp/yaohai/smart-search", body);
-          if (allSmartResultsEmpty(content)) {
-            // Router matched DBs but searched the whole question in one field
-            // (or picked an unsupported field). Retry with individual tokens
-            // across the router's field + the DB's catalog search_fields.
-            const retried = await retrySmartResultsWithTokens(
-              content as Record<string, unknown>,
-              validated.q,
-              limit
-            );
-            if (retried) {
-              return ok(retried);
-            }
-            // Keyword-only question (e.g. "集采"): show sample rows from the
-            // matched databases.
-            const browsed = await browseMatchedDatabases(
-              content as Record<string, unknown>,
-              limit
-            );
-            if (browsed) {
-              return ok(browsed);
-            }
-            // Still nothing — try the global panorama.
-            const fallback = await globalSearchContent(validated.q, validated.query, limit);
-            return ok({
-              question: validated.q,
-              matched_databases: (content as Record<string, unknown>).matched_databases,
-              fallback: "global-search",
-              note: "Smart-search router matched databases but returned no rows; fell back to global search.",
-              ...fallback,
-            });
-          }
-          return ok(content);
-        } catch (error) {
-          if (error instanceof ApiError) {
-            // Backend router could not match any database (e.g. plain drug-name
-            // question) — fall back to the global panorama search.
-            const fallback = await globalSearchContent(validated.q, validated.query, limit);
-            return ok({
-              question: validated.q,
-              fallback: "global-search",
-              note: `Smart-search router failed (${error.message}); fell back to global search.`,
-              ...fallback,
-            });
-          }
-          throw error;
-        }
       }
       case "product-cn-fields": {
         EmptyObjectSchema.parse(args ?? {});
