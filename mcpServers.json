@@ -20,6 +20,9 @@
           "yaohai-detail": {
             "description": "Fetch one Yaohai record detail"
           },
+          "yaohai-facets": {
+            "description": "Facet distributions (条件筛选) for dbs databases; omit fields to list them"
+          },
           "yaohai-global-search": {
             "description": "Global drug panorama search"
           },

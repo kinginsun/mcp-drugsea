@@ -1,0 +1,1277 @@
+{
+  "jiyao": [
+    {
+      "title": "地区",
+      "queryKey": "province",
+      "urlPath": "/jiyao/eslist/province",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/jiyao/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/jiyao/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "基药版本",
+      "queryKey": "std_catalog_version",
+      "urlPath": "/jiyao/eslist/std_catalog_version",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "zlsm": [
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/c/zlsm/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/c/zlsm/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "注册分类",
+      "queryKey": "register_type",
+      "urlPath": "/c/zlsm/eslist/register_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "zldj": [
+    {
+      "title": "登记状态",
+      "queryKey": "registration_status",
+      "urlPath": "/c/zldj/eslist/registration_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "登记表类型",
+      "queryKey": "form_type",
+      "urlPath": "/c/zldj/eslist/form_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "专利信息公开",
+      "queryKey": "is_public",
+      "urlPath": "/c/zldj/eslist/is_public",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/c/zldj/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/c/zldj/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "cn_reference_drugs": [
+    {
+      "title": "药品剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/c/cn_reference_drugs/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "公布批次",
+      "queryKey": "batch_no",
+      "urlPath": "/c/cn_reference_drugs/eslist/batch_no",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "公告时间",
+      "queryKey": "notice_date",
+      "urlPath": "/c/cn_reference_drugs/eslist/notice_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "cn_reference_drugs_publicity": [
+    {
+      "title": "公示类型",
+      "queryKey": "publicity_type",
+      "urlPath": "/c/cn_reference_drugs_publicity/eslist/publicity_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/c/cn_reference_drugs_publicity/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "公布批次",
+      "queryKey": "batch_no",
+      "urlPath": "/c/cn_reference_drugs_publicity/eslist/batch_no",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "公告时间",
+      "queryKey": "notice_date",
+      "urlPath": "/c/cn_reference_drugs_publicity/eslist/notice_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "yzpj_products": [
+    {
+      "title": "最高进展",
+      "queryKey": "latest_status",
+      "urlPath": "/b/yzpj_products/list/latest_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "首家过评日期",
+      "queryKey": "first_pass_date",
+      "urlPath": "/b/yzpj_products/list/first_pass_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "jicai": [
+    {
+      "title": "集采类型",
+      "queryKey": "jc_type",
+      "urlPath": "/jicai/eslist/jc_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "集采项目",
+      "queryKey": "jc_project",
+      "urlPath": "/jicai/eslist/jc_project",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "中选区域",
+      "queryKey": "region",
+      "urlPath": "/jicai/eslist/region",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "执行状态",
+      "queryKey": "execution_status",
+      "urlPath": "/jicai/eslist/execution_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "jicai_mulu": [
+    {
+      "title": "集采类型",
+      "queryKey": "jc_type",
+      "urlPath": "/jicai_mulu/eslist/jc_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "集采项目",
+      "queryKey": "jc_project",
+      "urlPath": "/jicai_mulu/eslist/jc_project",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "targets": [
+    {
+      "title": "靶点类型",
+      "queryKey": "target_type",
+      "urlPath": "/targets/eslist/target_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "种类",
+      "queryKey": "kind",
+      "urlPath": "/targets/eslist/kind",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "生物体",
+      "queryKey": "organism",
+      "urlPath": "/targets/eslist/organism",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "cn_orange_book": [
+    {
+      "title": "剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/c/cn_orange_book/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "给药途径",
+      "queryKey": "administration_route",
+      "urlPath": "/c/cn_orange_book/eslist/administration_route",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "参比制剂",
+      "queryKey": "is_reference_drug",
+      "urlPath": "/c/cn_orange_book/eslist/is_reference_drug",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "标准制剂",
+      "queryKey": "is_standard_drug",
+      "urlPath": "/c/cn_orange_book/eslist/is_standard_drug",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "收录类别",
+      "queryKey": "category",
+      "urlPath": "/c/cn_orange_book/eslist/category",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "上市销售状态",
+      "queryKey": "marketing_status",
+      "urlPath": "/c/cn_orange_book/eslist/marketing_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "cde_yfb_registration": [
+    {
+      "title": "批准年份",
+      "queryKey": "reg_num_year",
+      "urlPath": "/c/cde_yfb_registration/eslist/reg_num_year",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "产品来源",
+      "queryKey": "local_or_import",
+      "urlPath": "/c/cde_yfb_registration/eslist/local_or_import",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "厂家数量",
+      "queryKey": "marketing_count",
+      "urlPath": "/c/cde_yfb_registration/eslist/marketing_count",
+      "filterType": "range",
+      "showSearchBox": false
+    },
+    {
+      "title": "原辅包类型",
+      "queryKey": "yfb_type",
+      "urlPath": "/c/cde_yfb_registration/eslist/yfb_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "登记日期",
+      "queryKey": "register_date",
+      "urlPath": "/c/cde_yfb_registration/eslist/register_date",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "更新日期",
+      "queryKey": "update_date",
+      "urlPath": "/c/cde_yfb_registration/eslist/update_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "gov_drugs": [
+    {
+      "title": "省份",
+      "queryKey": "province",
+      "urlPath": "/c/gov_drugs/eslist/province",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/c/gov_drugs/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "nhsa_code": [
+    {
+      "title": "医保类型",
+      "queryKey": "insurance_type",
+      "urlPath": "/c/nhsa_code/eslist/insurance_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "注册剂型",
+      "queryKey": "registered_dosage_form",
+      "urlPath": "/c/nhsa_code/eslist/registered_dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "最小制剂单位",
+      "queryKey": "min_preparation_unit",
+      "urlPath": "/c/nhsa_code/eslist/min_preparation_unit",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "最小包装单位",
+      "queryKey": "min_package_unit",
+      "urlPath": "/c/nhsa_code/eslist/min_package_unit",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "zb_news": [
+    {
+      "title": "省份",
+      "queryKey": "city",
+      "urlPath": "/c/zb_news/eslist/city",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "网站",
+      "queryKey": "website",
+      "urlPath": "/c/zb_news/eslist/website",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "发布日期",
+      "queryKey": "publish_date",
+      "urlPath": "/c/zb_news/eslist/publish_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "uk_emc": [
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/uk_emc/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "法律类别",
+      "queryKey": "legal_category",
+      "urlPath": "/uk_emc/eslist/legal_category",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "治疗领域",
+      "queryKey": "ATC_code",
+      "urlPath": "/uk_emc/eslist/ATC_code",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "ATC分类树",
+      "queryKey": "ATC",
+      "urlPath": "/c/get/atc/index2",
+      "filterType": "tree",
+      "showSearchBox": false
+    },
+    {
+      "title": "上市日期",
+      "queryKey": "first_authorization_date",
+      "urlPath": "/uk_emc/eslist/first_authorization_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "hma": [
+    {
+      "title": "药品剂型",
+      "queryKey": "Ph_form",
+      "urlPath": "/hma/eslist/Ph_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "参考成员国",
+      "queryKey": "RMS",
+      "urlPath": "/hma/eslist/RMS",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "市场状态",
+      "queryKey": "product_outcome",
+      "urlPath": "/hma/eslist/product_outcome",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "获批时间",
+      "queryKey": "date_of_outcome",
+      "urlPath": "/hma/eslist/date_of_outcome",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "更新时间",
+      "queryKey": "date_of_update",
+      "urlPath": "/hma/eslist/date_of_update",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "ATC分类树",
+      "queryKey": "ATC",
+      "urlPath": "/c/get/atc/index2",
+      "filterType": "tree",
+      "showSearchBox": false
+    }
+  ],
+  "hk_doh": [
+    {
+      "title": "法律分类",
+      "queryKey": "legal_classification",
+      "urlPath": "/hk_doh/eslist/legal_classification",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "销售要求",
+      "queryKey": "sale_requirement",
+      "urlPath": "/hk_doh/eslist/sale_requirement",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "注册日期",
+      "queryKey": "registration_date",
+      "urlPath": "/hk_doh/eslist/registration_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "se_notice": [
+    {
+      "title": "公告来源",
+      "queryKey": "se",
+      "urlPath": "/h/se_notice/eslist/se",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "文献标记",
+      "queryKey": "is_transferred_to_references",
+      "urlPath": "/h/se_notice/eslist/is_transferred_to_references",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "drug_law": [
+    {
+      "title": "法规来源",
+      "queryKey": "source",
+      "urlPath": "/h/drug_law/eslist/source",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "一级分类",
+      "queryKey": "main_category",
+      "urlPath": "/h/drug_law/eslist/main_category",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "公告栏目",
+      "queryKey": "category",
+      "urlPath": "/h/drug_law/eslist/category",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "发布日期",
+      "queryKey": "publish_date",
+      "urlPath": "/h/drug_law/eslist/publish_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "nmpa_tsspxx_gc": [
+    {
+      "title": "批准日期",
+      "queryKey": "approval_date",
+      "urlPath": "/f/nmpa_tsspxx_gc/eslist/approval_date",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "是否有效",
+      "queryKey": "in_sfda",
+      "urlPath": "/f/nmpa_tsspxx_gc/eslist/in_sfda",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "nmpa_tsspxx_jk": [
+    {
+      "title": "批准日期",
+      "queryKey": "approval_date",
+      "urlPath": "/f/nmpa_tsspxx_jk/eslist/approval_date",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "是否有效",
+      "queryKey": "in_sfda",
+      "urlPath": "/f/nmpa_tsspxx_jk/eslist/in_sfda",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "nmpa_gmp": [
+    {
+      "title": "省市",
+      "queryKey": "std_province",
+      "urlPath": "/nmpa_gmp/eslist/std_province",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "发证日期",
+      "queryKey": "std_date_of_issue",
+      "urlPath": "/nmpa_gmp/eslist/std_date_of_issue",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "证书状态",
+      "queryKey": "std_gmp_status",
+      "urlPath": "/nmpa_gmp/eslist/std_gmp_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "截止日期",
+      "queryKey": "std_date_of_expiry",
+      "urlPath": "/nmpa_gmp/eslist/std_date_of_expiry",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "是否有效",
+      "queryKey": "in_sfda",
+      "urlPath": "/nmpa_gmp/eslist/in_sfda",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "nmpa_buchongbeian": [
+    {
+      "title": "剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/nmpa_buchongbeian/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/nmpa_buchongbeian/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "备案机关",
+      "queryKey": "record_office",
+      "urlPath": "/nmpa_buchongbeian/eslist/record_office",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "备案日期",
+      "queryKey": "record_date",
+      "urlPath": "/nmpa_buchongbeian/eslist/record_date",
+      "filterType": "date",
+      "showSearchBox": true
+    }
+  ],
+  "nmpa_tcm_protection": [
+    {
+      "title": "剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/nmpa_tcm_protection/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "保护起始日",
+      "queryKey": "protect_start",
+      "urlPath": "/nmpa_tcm_protection/eslist/protect_start",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "保护终止日",
+      "queryKey": "protect_end",
+      "urlPath": "/nmpa_tcm_protection/eslist/protect_end",
+      "filterType": "date",
+      "showSearchBox": true
+    },
+    {
+      "title": "保护期限",
+      "queryKey": "protect_period",
+      "urlPath": "/nmpa_tcm_protection/eslist/protect_period",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "nmpa_tcm_granules": [
+    {
+      "title": "备案状态",
+      "queryKey": "filing_status",
+      "urlPath": "/f/nmpa_tcm_granules/eslist/filing_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "备案时间",
+      "queryKey": "filing_date",
+      "urlPath": "/f/nmpa_tcm_granules/eslist/filing_date",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "备案省局",
+      "queryKey": "record_province",
+      "urlPath": "/f/nmpa_tcm_granules/eslist/record_province",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "isaf_drugs": [
+    {
+      "title": "剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/isaf_drugs/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "给药途径",
+      "queryKey": "administration_route",
+      "urlPath": "/isaf_drugs/eslist/administration_route",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "活性成分",
+      "queryKey": "ingredients",
+      "urlPath": "/isaf_drugs/eslist/ingredients",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "法定类别",
+      "queryKey": "type",
+      "urlPath": "/isaf_drugs/eslist/type",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "isaf_tcm": [
+    {
+      "title": "剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/isaf_tcm/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "给药途径",
+      "queryKey": "administration_route",
+      "urlPath": "/isaf_tcm/eslist/administration_route",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "配方",
+      "queryKey": "formula",
+      "urlPath": "/isaf_tcm/eslist/formula",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "法定类别",
+      "queryKey": "type",
+      "urlPath": "/isaf_tcm/eslist/type",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "nmpa_reg_patent": [
+    {
+      "title": "专利类型",
+      "queryKey": "patent_type",
+      "urlPath": "/f/nmpa_reg_patent/eslist/patent_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "专利到期日",
+      "queryKey": "expiry_date",
+      "urlPath": "/f/nmpa_reg_patent/eslist/expiry_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "cmchk_pcm": [
+    {
+      "title": "注册类型",
+      "queryKey": "formula_type",
+      "urlPath": "/cmchk_pcm/eslist/formula_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药材组成",
+      "queryKey": "package_label_cn",
+      "urlPath": "/cmchk_pcm/eslist/package_label_cn",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "PMPW标记",
+      "queryKey": "pmpw_flag",
+      "urlPath": "/cmchk_pcm/eslist/pmpw_flag",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "剂型",
+      "queryKey": "dosage_form_cn",
+      "urlPath": "/cmchk_pcm/eslist/dosage_form_cn",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "是否出口",
+      "queryKey": "is_export",
+      "urlPath": "/cmchk_pcm/eslist/is_export",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "是否药典收录",
+      "queryKey": "is_coexist_cp",
+      "urlPath": "/cmchk_pcm/eslist/is_coexist_cp",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "herbs": [
+    {
+      "title": "功效分类",
+      "queryKey": "efficacy_class",
+      "urlPath": "/herbs/eslist/efficacy_class",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "科属分类",
+      "queryKey": "family_classification",
+      "urlPath": "/herbs/eslist/family_classification",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "herb_formulas": [
+    {
+      "title": "组成药材",
+      "queryKey": "herbs",
+      "urlPath": "/herb_formulas/eslist/herbs",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "nhsa_herbs": [
+    {
+      "title": "功效分类",
+      "queryKey": "efficacy_classification",
+      "urlPath": "/c/nhsa_herbs/eslist/efficacy_classification",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "地区",
+      "queryKey": "region_name",
+      "urlPath": "/c/nhsa_herbs/eslist/region_name",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "添加时间",
+      "queryKey": "add_time",
+      "urlPath": "/c/nhsa_herbs/eslist/add_time",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "nhsa_hospital_prepration": [
+    {
+      "title": "制剂类别",
+      "queryKey": "preparation_type",
+      "urlPath": "/c/nhsa_hospital_prepration/eslist/preparation_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "地区",
+      "queryKey": "region",
+      "urlPath": "/c/nhsa_hospital_prepration/eslist/region",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "有效期至",
+      "queryKey": "expiry_date",
+      "urlPath": "/c/nhsa_hospital_prepration/eslist/expiry_date",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "添加时间",
+      "queryKey": "add_time",
+      "urlPath": "/c/nhsa_hospital_prepration/eslist/add_time",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "drugsales": [
+    {
+      "title": "区域",
+      "queryKey": "region",
+      "urlPath": "/drugsales/eslist/region",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "国家",
+      "queryKey": "country",
+      "urlPath": "/drugsales/eslist/country",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/drugsales/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "年份",
+      "queryKey": "year",
+      "urlPath": "/drugsales/eslist/year",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "销售渠道",
+      "queryKey": "sales_channel",
+      "urlPath": "/drugsales/eslist/sales_channel",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/drugsales/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "给药途径",
+      "queryKey": "administration_route",
+      "urlPath": "/drugsales/eslist/administration_route",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "nmpa_guochan": [
+    {
+      "title": "批准日期",
+      "queryKey": "approve_date",
+      "urlPath": "/f/nmpa_guochan/eslist/approve_date",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/f/nmpa_guochan/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "产品类别",
+      "queryKey": "drug_type",
+      "urlPath": "/f/nmpa_guochan/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "是否有效",
+      "queryKey": "in_sfda",
+      "urlPath": "/f/nmpa_guochan/eslist/in_sfda",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "nmpa_jinkou": [
+    {
+      "title": "批准日期",
+      "queryKey": "date_of_issue",
+      "urlPath": "/f/nmpa_jinkou/eslist/date_of_issue",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/f/nmpa_jinkou/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "产品类别",
+      "queryKey": "drug_type",
+      "urlPath": "/f/nmpa_jinkou/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "是否有效",
+      "queryKey": "in_sfda",
+      "urlPath": "/f/nmpa_jinkou/eslist/in_sfda",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "medical_device": [
+    {
+      "title": "管理类别",
+      "queryKey": "std_product_type",
+      "urlPath": "/medical_device/eslist/std_product_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "批准日期",
+      "queryKey": "approval_date",
+      "urlPath": "/medical_device/eslist/approval_date",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "有效期至",
+      "queryKey": "valid_until_date",
+      "urlPath": "/medical_device/eslist/valid_until_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "medical_device_beian": [
+    {
+      "title": "备案日期",
+      "queryKey": "filing_date",
+      "urlPath": "/medical_device_jinkou_beian/eslist/approval_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "medical_device_jinkou_beian": [
+    {
+      "title": "备案日期",
+      "queryKey": "filing_date",
+      "urlPath": "/medical_device_beian/eslist/approval_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "medical_device_jinkou": [
+    {
+      "title": "管理类别",
+      "queryKey": "std_product_type",
+      "urlPath": "/medical_device_jinkou/eslist/std_product_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "批准日期",
+      "queryKey": "approval_date",
+      "urlPath": "/medical_device_jinkou/eslist/approval_date",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "有效期至",
+      "queryKey": "valid_until_date",
+      "urlPath": "/medical_device_jinkou/eslist/valid_until_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "yibao": [
+    {
+      "title": "医保地区",
+      "queryKey": "province",
+      "urlPath": "/yibao/eslist/province",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/yibao/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "医保类型",
+      "queryKey": "insurance_level",
+      "urlPath": "/yibao/eslist/insurance_level",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "医保版本",
+      "queryKey": "std_catalog_version",
+      "urlPath": "/yibao/eslist/std_catalog_version",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "japan_dmf": [
+    {
+      "title": "注册类型",
+      "queryKey": "registration_type_cn",
+      "urlPath": "/japan_dmf/eslist/registration_type_cn",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "最近注册日期",
+      "queryKey": "latest_registration_date",
+      "urlPath": "/japan_dmf/eslist/latest_registration_date",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "初始注册日期",
+      "queryKey": "initial_registration_date",
+      "urlPath": "/japan_dmf/eslist/initial_registration_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "fda_dmf": [
+    {
+      "title": "DMF状态",
+      "queryKey": "status",
+      "urlPath": "/fda_dmf/eslist/status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "DMF类型",
+      "queryKey": "type",
+      "urlPath": "/fda_dmf/eslist/type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "提交日期",
+      "queryKey": "submit_date",
+      "urlPath": "/fda_ndc/eslist/submit_date",
+      "filterType": "date",
+      "showSearchBox": false
+    }
+  ],
+  "fda_ndc": [
+    {
+      "title": "是否有说明书",
+      "queryKey": "has_sms",
+      "urlPath": "/fda_ndc/eslist/has_sms",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "市场分类",
+      "queryKey": "MARKETINGCATEGORYNAME",
+      "urlPath": "/fda_ndc/eslist/MARKETINGCATEGORYNAME",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "产品类型",
+      "queryKey": "PRODUCTTYPENAME",
+      "urlPath": "/fda_ndc/eslist/PRODUCTTYPENAME",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品剂型",
+      "queryKey": "DOSAGEFORMNAME",
+      "urlPath": "/fda_ndc/eslist/DOSAGEFORMNAME",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "给药途径",
+      "queryKey": "ROUTENAME",
+      "urlPath": "/fda_ndc/eslist/ROUTENAME",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "NDC排除标记",
+      "queryKey": "NDC_EXCLUDE_FLAG",
+      "urlPath": "/fda_ndc/eslist/NDC_EXCLUDE_FLAG",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "上市日期",
+      "queryKey": "STARTMARKETINGDATE",
+      "urlPath": "/fda_ndc/eslist/STARTMARKETINGDATE",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "退市日期",
+      "queryKey": "ENDMARKETINGDATE",
+      "urlPath": "/fda_ndc/eslist/ENDMARKETINGDATE",
+      "filterType": "date",
+      "showSearchBox": false
+    },
+    {
+      "title": "药理分类",
+      "queryKey": "PHARM_CLASSES",
+      "urlPath": "/fda_ndc/eslist/PHARM_CLASSES",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "tw_fda": [
+    {
+      "title": "单复方",
+      "queryKey": "mixture",
+      "urlPath": "/tw_fda/eslist/mixture",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品分类",
+      "queryKey": "drug_clasify_code",
+      "urlPath": "/tw_fda/eslist/drug_clasify_code",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "许可证种类",
+      "queryKey": "lblLicknd",
+      "urlPath": "/tw_fda/eslist/lblLicknd",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "dpd": [
+    {
+      "title": "剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/dpd/eslist/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "最新状态",
+      "queryKey": "current_status",
+      "urlPath": "/dpd/eslist/current_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "给药途径",
+      "queryKey": "route_of_administration",
+      "urlPath": "/dpd/eslist/route_of_administration",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "适用对象",
+      "queryKey": "class",
+      "urlPath": "/dpd/eslist/class",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品类别",
+      "queryKey": "schedule",
+      "urlPath": "/dpd/eslist/schedule",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "成分个数",
+      "queryKey": "ingredient_num",
+      "urlPath": "/dpd/eslist/ingredient_num",
+      "filterType": "range",
+      "showSearchBox": false
+    },
+    {
+      "title": "是否有说明书",
+      "queryKey": "has_sms",
+      "urlPath": "/dpd/eslist/has_sms",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ]
+}

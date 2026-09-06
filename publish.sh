@@ -5,7 +5,7 @@
 #
 # Pipeline:
 #   preflight → npm auth → version bump → sync PACKAGE_VERSION → clean build
-#   → secret/tarball audit → stdio smoke test → optional full suite
+#   → secret/tarball audit → stdio smoke test → optional full + facet suites
 #   → npm publish → git commit + tag → git push → post-publish verify
 #
 # Publish runs BEFORE commit/tag on purpose: npm OTP codes expire in ~30s, and
@@ -18,8 +18,8 @@
 #   ./publish.sh --version 0.3.0 # explicit target version
 #   ./publish.sh --dry-run       # everything except publish/commit/push
 #   ./publish.sh --yes           # skip interactive confirmation
-#   ./publish.sh --skip-tests    # skip the full 12-tool suite (smoke test still runs)
-#   ./publish.sh --note "remove smart-search"   # override auto-generated release note
+#   ./publish.sh --skip-tests    # skip the full suite + facet suite (stdio tool-count guard still runs)
+#   ./publish.sh --note "add yaohai-facets"     # override auto-generated release note
 #   ./publish.sh --otp 123456    # npm 2FA one-time code (else prompted)
 #   ./publish.sh --expect-no-otp # your token bypasses OTP (npm automation token)
 #   ./publish.sh --no-push       # publish, but leave the git push to you
@@ -36,8 +36,12 @@ PKG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PKG_ROOT"
 
 PKG_NAME="$(node -p "require('./package.json').name")"
-EXPECTED_TOOLS=12                 # keep in sync with README "should list N tools"
+EXPECTED_TOOLS=13                 # keep in sync with README "should list N tools"
 REMOVED_TOOLS=(yaohai-smart-search)  # regression guard: must never come back
+# yaohai-facets is the single generic facet tool (44 dbs, 129 fields, generated
+# from the drugsea frontend condition-filter map). Guarded so a refactor cannot
+# silently drop it while EXPECTED_TOOLS still adds up.
+REQUIRED_TOOLS=(yaohai-facets)
 NEEDS_GIT_PUSH=1
 DRY_RUN=0
 ASSUME_YES=0
@@ -381,6 +385,12 @@ for removed in "${REMOVED_TOOLS[@]}"; do
   ok "$removed is gone"
 done
 
+for required in "${REQUIRED_TOOLS[@]}"; do
+  printf '%s\n' "$TOOL_NAMES" | grep -qx "$required" \
+    || die "$required is missing from tools/list (see REQUIRED_TOOLS in publish.sh)"
+  ok "$required is present"
+done
+
 if [[ $SKIP_TESTS -eq 0 ]]; then
   # The full suite needs a *live* token. Check it first so that a dead token is
   # reported as a credential problem, not mistaken for a code regression.
@@ -414,11 +424,25 @@ if [[ $SKIP_TESTS -eq 0 ]]; then
       ' 2>/dev/null || echo "probe-error"
     )"
     if [[ "$TOKEN_STATUS" == "OK" ]]; then
-      ok "token accepted — running full 12-tool suite"
+      ok "token accepted — running full ${EXPECTED_TOOLS}-tool suite"
+      SUITE_OK=1
       if node scripts/test-all-tools.mjs; then
         ok "full suite passed"
       else
+        SUITE_OK=0
         warn "full suite reported failures"
+      fi
+      # Dedicated yaohai-facets assertions: discovery mode, bucket fetch, filter
+      # narrowing, per-db defaultQuery merge, and each error path. Kept separate
+      # from the smoke test because it exercises branches the smoke test cannot
+      # reach without a live token.
+      if node scripts/test-facets.mjs; then
+        ok "facet suite passed"
+      else
+        SUITE_OK=0
+        warn "facet suite reported failures"
+      fi
+      if [[ $SUITE_OK -eq 0 ]]; then
         confirm "publish anyway despite test failures?"
       fi
     else

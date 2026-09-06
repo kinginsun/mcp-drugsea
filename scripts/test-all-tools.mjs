@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Smoke-test all 12 mcp-drugsea tools via stdio JSON-RPC.
+ * Smoke-test all 13 mcp-drugsea tools via stdio JSON-RPC.
  * Usage: node scripts/test-all-tools.mjs
  * Reads env from process (set YAOHAI_MCP_TOKEN or source .env).
  */
@@ -157,6 +157,14 @@ async function main() {
   const staticCalls = [
     ["yaohai-catalog", { q: "医保" }],
     ["yaohai-search", { dbname: "yibao", query: { item: "阿司匹林" }, limit: 3 }],
+    // Discovery mode: no `fields` -> returns the facet catalog, no upstream call.
+    ["yaohai-facets", {}],
+    // Fetch mode: buckets for the same db searched above, scoped by that filter.
+    ["yaohai-facets", {
+      dbname: "yibao",
+      query: { item: "阿司匹林" },
+      fields: ["drug_type", "province"],
+    }],
     ["yaohai-global-search", { q: "PD-1", limit: 3 }],
     ["product-cn-fields", {}],
     ["product-cn-search", { query: { drug_name: "阿司匹林" }, limit: 3 }],

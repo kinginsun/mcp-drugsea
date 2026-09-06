@@ -29,6 +29,25 @@ export const YaohaiDetailSchema = z.object({
   id: z.string().min(1),
 });
 
+/**
+ * Facet request for a dbs-route database.
+ *
+ * Dual-mode, so one tool covers both discovery and fetching:
+ *   - `fields` omitted  -> return the facet catalog (available fields). Add
+ *     `dbname` to narrow to one database, omit it to list all 44.
+ *   - `fields` given    -> fetch those facet distributions for `dbname`.
+ *
+ * Discovery mode exists because agents otherwise have to guess field names and
+ * would hit "Unknown facet fields". Fetching requires `fields` to be explicit:
+ * one HTTP request fires per field, so an implicit "all of them" would be a slow
+ * 129-request fan-out.
+ */
+export const YaohaiFacetsSchema = z.object({
+  dbname: z.string().optional(),
+  query: QueryObjectSchema.optional(),
+  fields: z.array(z.string().min(1)).min(1).optional(),
+});
+
 export const YaohaiGlobalSearchSchema = z.object({
   q: z.string().optional(),
   query: QueryObjectSchema.optional(),

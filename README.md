@@ -4,7 +4,7 @@ MCP (Model Context Protocol) stdio server for [DrugSea / Yaohai](https://db.drug
 
 The server forwards tool calls to **`https://db3.drugsea.cn/api`** with personal user token auth (`Authorization: Bearer ysk_…`). It covers:
 
-- **yaohai-*** — cross-database catalog / search / detail / global (`POST /g/mcp/yaohai/*`)
+- **yaohai-*** — cross-database catalog / search / detail / facets / global (`POST /g/mcp/yaohai/*`; facets via GET)
 - **product-cn-*** — already-marketed China products (search/detail via MCP on db3; facets via GET)
 - **reg-cn-*** — CDE registration / review pipeline (search/detail via MCP on db3; facets via GET)
 
@@ -100,7 +100,7 @@ On db3, direct GET list routes may return encrypted payloads; this client auto-r
 |-------------|--------|
 | Already listed in China (国药准字, 批准文号, 上市, 医保/集采状态) | `product-cn-fields` → `product-cn-search` / `product-cn-facets` → `product-cn-detail` |
 | R&D / CDE (在研, 受理号, 审评, 尚未上市) | `reg-cn-fields` → `reg-cn-search` / `reg-cn-facets` → `reg-cn-detail` |
-| Other DBs (医保 `yibao`, 基药 `jiyao`, 集采 `jicai`, trials, DMF, …) | `yaohai-catalog` → `yaohai-search` → `yaohai-detail` |
+| Other DBs (医保 `yibao`, 基药 `jiyao`, 集采 `jicai`, trials, DMF, …) | `yaohai-catalog` → `yaohai-search` / `yaohai-facets` → `yaohai-detail` |
 | Global panorama | `yaohai-global-search` |
 | Unclear which DB | `yaohai-catalog` (list DBs by keyword/category) → `yaohai-search`, or `yaohai-global-search` |
 
@@ -121,9 +121,17 @@ xlsx export is not implemented in this MCP (v1 returns JSON samples only).
 | `yaohai-catalog` | `category?`, `q?` | List databases |
 | `yaohai-search` | `dbname`, `query?`, `limit?`, `offset?` | Default limit 10, max 50 |
 | `yaohai-detail` | `dbname`, `id` | Skip DBs with `has_detail: false` |
+| `yaohai-facets` | `dbname?`, `query?`, `fields?` | Facets for `dbs`-route DBs. Omit `fields` → discover facet-capable DBs/fields; pass `fields` → fetch buckets |
 | `yaohai-global-search` | `q?`, `query?`, `limit?`, `offset?` | `q` fills `query.term` |
 
 When the target database is unclear, use `yaohai-catalog` (filter by `category` / `q`) to pick a `dbname`, then `yaohai-search`; or use `yaohai-global-search` for a cross-database panorama query.
+
+`yaohai-facets` mirrors the ConditionSearch facet filters of the website for the `dbs`-route databases (医保 `yibao`, 基药 `jiyao`, 集采 `jicai`, sales `drugsales`, …). Two modes:
+
+- **Discovery** (no `fields`): omit `dbname` to list all 44 facet-capable databases, or pass `dbname` to list its facet-able fields (with `filter_type`).
+- **Fetch** (`dbname` + `fields`): returns aggregation buckets (`value`/`count`) for the named terms fields, optionally narrowed by `query`. Only `terms`-type fields are exposed (44 DBs, 129 fields); date/range/tree filters are not faceted here.
+
+For the two dedicated ES routes use `product-cn-facets` / `reg-cn-facets` instead — `yaohai-facets` returns an actionable hint if you pass `product_cn` / `reg_cn`.
 
 ### product_cn (marketed)
 
@@ -179,7 +187,7 @@ Add the server to your client config so it auto-starts. Example for Cursor (`~/.
 }
 ```
 
-Then reload MCP servers in the client (Cursor: Settings → MCP → refresh). The client should list **12 tools**.
+Then reload MCP servers in the client (Cursor: Settings → MCP → refresh). The client should list **13 tools**.
 
 ### Step 1 — Install (optional, for local/CLI use)
 
@@ -261,13 +269,13 @@ npm install && npm run build
 YAOHAI_MCP_TOKEN=ysk_your_token_here node scripts/test-all-tools.mjs
 ```
 
-Expected final line: `--- Summary: 12 passed, 0 failed / 12 tool calls ---`.
+Expected final line: `--- Summary: 14 passed, 0 failed / 14 tool calls ---`.
 
 ### Step 6 — Verify inside the MCP client
 
 After reloading MCP servers in the client, ask the agent:
 
-1. "List the drugsea tools" → should see 12 tools.
+1. "List the drugsea tools" → should see 13 tools.
 2. "Search 阿司匹林 in product-cn" → should return rows with `total > 0`.
 3. "Global search: PD-1" → should return panorama results without error.
 

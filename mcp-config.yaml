@@ -21,6 +21,13 @@ tools:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
     timeout: 60000
     description: "Fetch one Yaohai record detail"
+  yaohai-facets:
+    type: stdio
+    command: ["node", "dist/index.js"]
+    env:
+      YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+    timeout: 60000
+    description: "Facet distributions (条件筛选) for dbs databases; omit fields to list them"
   yaohai-global-search:
     type: stdio
     command: ["node", "dist/index.js"]

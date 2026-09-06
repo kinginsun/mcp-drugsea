@@ -45,11 +45,13 @@ import {
   RegCnSearchSchema,
   YaohaiCatalogSchema,
   YaohaiDetailSchema,
+  YaohaiFacetsSchema,
   YaohaiGlobalSearchSchema,
   YaohaiSearchSchema,
 } from "./types.js";
+import { DBS_FACET_CATALOG } from "./dbs-facets.js";
 
-const PACKAGE_VERSION = "0.3.0";
+const PACKAGE_VERSION = "0.4.0";
 
 const YAOHAI_LIMIT_MAX = 50;
 const YAOHAI_LIMIT_DEFAULT = 10;
@@ -68,6 +70,21 @@ const PRESENTATION_HINT =
 
 const ROUTING_HINT =
   "Already-marketed China products (国药准字, 批准文号, 上市, 医保/集采) → product-cn-* tools. R&D / CDE pipeline (在研, 受理号, 审评, 尚未上市) → reg-cn-* tools. Other DBs (医保 yibao, 基药 jiyao, 集采 jicai, trials, global) → yaohai-*. Do not use yaohai-search with dbname product_cn or reg_cn when the dedicated tools apply.";
+
+/**
+ * Derived from the generated facet catalog so the tool descriptions can never
+ * drift from the data they describe.
+ */
+const DBS_FACET_DBS = Object.keys(DBS_FACET_CATALOG).sort();
+const DBS_FACET_DB_COUNT = DBS_FACET_DBS.length;
+const DBS_FACET_FIELD_COUNT = DBS_FACET_DBS.reduce(
+  (n, db) => n + Object.keys(DBS_FACET_CATALOG[db].fields).length,
+  0,
+);
+/** A few well-known dbs, used to hint coverage without listing all 44. */
+const DBS_FACET_EXAMPLES = ["yibao", "jiyao", "jicai", "dpd", "fda_ndc", "uk_emc", "nmpa_gmp"]
+  .filter((db) => db in DBS_FACET_CATALOG)
+  .join(", ");
 
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception:", error);
@@ -152,6 +169,33 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             id: { type: "string", description: "Record id from search results" },
           },
           required: ["dbname", "id"],
+        },
+      },
+      {
+        name: "yaohai-facets",
+        description:
+          "Facet distributions (条件筛选) for a dbs database — aggregated value+count buckets for filterable fields. " +
+          `Works for ${DBS_FACET_DB_COUNT} dbs reached via yaohai-search (${DBS_FACET_EXAMPLES}, …). ` +
+          `DISCOVERY MODE: omit \`fields\` to list available facet fields (add \`dbname\` for one db, omit it for all ${DBS_FACET_DB_COUNT}). ` +
+          "FETCH MODE: pass `fields` (required with `dbname`) to get buckets for those fields. One HTTP request fires per field, so request only the 2–4 you need. " +
+          "Pass the same `query` filters you used in yaohai-search to facet within that result set. " +
+          "Not available for product_cn / reg_cn — use product-cn-facets / reg-cn-facets instead.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            dbname: {
+              type: "string",
+              description:
+                "Database id from yaohai-catalog, e.g. yibao, jiyao, dpd, uk_emc. Required when `fields` is given. Omit to list all facet-capable databases.",
+            },
+            query: QUERY_PROP,
+            fields: {
+              type: "array",
+              items: { type: "string" },
+              description:
+                "Facet field keys (see discovery mode). Omit to get the catalog instead of buckets. Example for yibao: [\"province\", \"drug_type\"].",
+            },
+          },
         },
       },
       {
@@ -321,6 +365,29 @@ function asQuery(query: QueryObject | undefined): QueryObject {
   return { ...(query ?? {}) };
 }
 
+/**
+ * Structured "not facet-capable" response.
+ *
+ * Returned as a normal (non-error) payload so an agent can self-correct in one
+ * step instead of having to parse an exception message. Covers the common cases:
+ * a dbname that is not in the catalog at all, and one that exists but is not a
+ * dbs-route database (product_cn / reg_cn have dedicated facet tools; the other
+ * custom/aggs routes expose no condition filters).
+ */
+function facetDbUnknown(dbname: string): Record<string, unknown> {
+  const near = DBS_FACET_DBS.filter((db) => db.includes(dbname) || dbname.includes(db)).slice(0, 5);
+  return {
+    dbname,
+    supported: false,
+    error: `No facet fields known for dbname "${dbname}".`,
+    hint:
+      "Only dbs-route databases support yaohai-facets. " +
+      "For product_cn use product-cn-facets; for reg_cn use reg-cn-facets. " +
+      `Call yaohai-facets with no arguments to list all ${DBS_FACET_DB_COUNT} facet-capable databases.`,
+    ...(near.length > 0 ? { did_you_mean: near } : {}),
+  };
+}
+
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
@@ -351,6 +418,81 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           id: validated.id,
         });
         return ok(content);
+      }
+      case "yaohai-facets": {
+        const validated = YaohaiFacetsSchema.parse(args ?? {});
+
+        // Discovery mode: no `fields` -> describe what can be facetted.
+        // Without this, agents would have to guess field names and would hit
+        // "Unknown facet fields" from fetchFacets.
+        if (!validated.fields) {
+          if (validated.dbname) {
+            const entry = DBS_FACET_CATALOG[validated.dbname];
+            if (!entry) {
+              return ok(facetDbUnknown(validated.dbname));
+            }
+            return ok({
+              dbname: validated.dbname,
+              title: entry.title,
+              category: entry.category,
+              facet_prefix: entry.prefix,
+              facet_count: Object.keys(entry.fields).length,
+              facets: entry.fields,
+            });
+          }
+          return ok({
+            facet_capable_databases: DBS_FACET_DB_COUNT,
+            total_facet_fields: DBS_FACET_FIELD_COUNT,
+            note:
+              "Call yaohai-facets with a dbname to list its fields, or pass dbname + fields to fetch buckets. " +
+              "product_cn and reg_cn use product-cn-facets / reg-cn-facets instead.",
+            databases: DBS_FACET_DBS.map((db) => ({
+              dbname: db,
+              title: DBS_FACET_CATALOG[db].title,
+              category: DBS_FACET_CATALOG[db].category,
+              facet_count: Object.keys(DBS_FACET_CATALOG[db].fields).length,
+              fields: Object.keys(DBS_FACET_CATALOG[db].fields),
+            })),
+          });
+        }
+
+        // Fetch mode: both dbname and fields are required.
+        if (!validated.dbname) {
+          throw new Error(
+            "dbname is required when fetching facets. Omit `fields` to list facet-capable databases."
+          );
+        }
+        const entry = DBS_FACET_CATALOG[validated.dbname];
+        if (!entry) {
+          return ok(facetDbUnknown(validated.dbname));
+        }
+
+        // Report unknown fields up front with the valid list, rather than letting
+        // fetchFacets throw on the first one and lose the rest.
+        const known = Object.keys(entry.fields);
+        const unknown = validated.fields.filter((f) => !known.includes(f));
+        if (unknown.length > 0) {
+          throw new Error(
+            `Unknown facet field(s) for ${validated.dbname}: ${unknown.join(", ")}. ` +
+              `Valid fields: ${known.join(", ")}.`
+          );
+        }
+
+        // Per-db required params (e.g. drugsales needs groupid=205) go first so
+        // caller-supplied values can still override them.
+        const query: QueryObject = { ...(entry.defaultQuery ?? {}), ...asQuery(validated.query) };
+
+        const content = await fetchFacets({
+          prefix: entry.prefix,
+          query,
+          fields: validated.fields,
+          catalog: entry.fields,
+        });
+        return ok({
+          dbname: validated.dbname,
+          title: entry.title,
+          ...content,
+        });
       }
       case "yaohai-global-search": {
         const validated = YaohaiGlobalSearchSchema.parse(args ?? {});
