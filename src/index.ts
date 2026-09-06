@@ -50,8 +50,12 @@ import {
   YaohaiSearchSchema,
 } from "./types.js";
 import { DBS_FACET_CATALOG } from "./dbs-facets.js";
+import {
+  checkForUpdate,
+  formatUpdateMessage,
+} from "./update-check.js";
 
-const PACKAGE_VERSION = "0.4.0";
+const PACKAGE_VERSION = "0.5.0";
 
 const YAOHAI_LIMIT_MAX = 50;
 const YAOHAI_LIMIT_DEFAULT = 10;
@@ -105,6 +109,9 @@ const server = new Server(
     capabilities: {
       resources: {},
       tools: {},
+      // Declared so clients accept the notifications/message we emit when a
+      // newer version of this package is published.
+      logging: {},
     },
   }
 );
@@ -630,8 +637,47 @@ function ok(content: unknown) {
   };
 }
 
+/**
+ * Tell the user a newer version is published, on both channels we have:
+ *  - stderr, which MCP clients surface in their server log panel and which is
+ *    safe for a stdio server (stdout carries JSON-RPC and must stay clean);
+ *  - a `notifications/message` log notification, which reaches clients that
+ *    render MCP log messages to the user.
+ *
+ * Never throws: diagnostics must not take the server down.
+ */
+async function announceUpdateIfAvailable(): Promise<void> {
+  try {
+    const result = await checkForUpdate(PACKAGE_VERSION);
+    if (!result.updateAvailable) return;
+
+    const message = formatUpdateMessage(result);
+    if (!message) return;
+
+    console.error(`[mcp-drugsea] ${message.split("\n").join("\n[mcp-drugsea] ")}`);
+
+    try {
+      await server.sendLoggingMessage({
+        level: "warning",
+        logger: "update-check",
+        data: message,
+      });
+    } catch {
+      // Client may not have declared logging support; stderr line still landed.
+    }
+  } catch {
+    // Swallow everything: an update check is never worth surfacing.
+  }
+}
+
 async function main() {
   const transport = new StdioServerTransport();
+  // Fire only after the initialize handshake completes, so the notification is
+  // never emitted before the client is ready to receive it. Deliberately not
+  // awaited: startup latency must not depend on registry reachability.
+  server.oninitialized = () => {
+    void announceUpdateIfAvailable();
+  };
   await server.connect(transport);
 }
 

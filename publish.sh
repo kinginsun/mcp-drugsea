@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 #
 # publish.sh — release @kinginsun/mcp-drugsea to the npm registry
-# (which is what makes `npx @kinginsun/mcp-drugsea` work for end users).
+# (which is what makes `npx @kinginsun/mcp-drugsea@latest` work for end users).
 #
 # Pipeline:
 #   preflight → npm auth → version bump → sync PACKAGE_VERSION → clean build
-#   → secret/tarball audit → stdio smoke test → optional full + facet suites
+#   → secret/tarball audit → stdio smoke test → hermetic update-check suite
+#   → optional full + facet suites (need a live token)
 #   → npm publish → git commit + tag → git push → post-publish verify
 #
 # Publish runs BEFORE commit/tag on purpose: npm OTP codes expire in ~30s, and
@@ -18,7 +19,7 @@
 #   ./publish.sh --version 0.3.0 # explicit target version
 #   ./publish.sh --dry-run       # everything except publish/commit/push
 #   ./publish.sh --yes           # skip interactive confirmation
-#   ./publish.sh --skip-tests    # skip the full suite + facet suite (stdio tool-count guard still runs)
+#   ./publish.sh --skip-tests    # skip ALL suites incl. the hermetic one (stdio tool-count guard still runs)
 #   ./publish.sh --note "add yaohai-facets"     # override auto-generated release note
 #   ./publish.sh --otp 123456    # npm 2FA one-time code (else prompted)
 #   ./publish.sh --expect-no-otp # your token bypasses OTP (npm automation token)
@@ -360,7 +361,7 @@ TOOLS_JSON="$(
     '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"publish-check","version":"1.0"}}}' \
     '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
     '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-  | YAOHAI_MCP_TOKEN="$SMOKE_TOKEN" node dist/index.js 2>/dev/null \
+  | YAOHAI_MCP_TOKEN="$SMOKE_TOKEN" YAOHAI_MCP_UPDATE_CHECK=0 node dist/index.js 2>/dev/null \
   | node -e '
       let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
         for (const l of d.split("\n").filter(Boolean).reverse()) {
@@ -392,6 +393,19 @@ for required in "${REQUIRED_TOOLS[@]}"; do
 done
 
 if [[ $SKIP_TESTS -eq 0 ]]; then
+  SUITE_OK=1
+
+  # Hermetic suite: stands up a fake registry on localhost, so it needs neither
+  # a live DrugSea token nor internet access. Runs unconditionally — a broken
+  # update check must fail the release even when the token is dead or missing.
+  log "running hermetic update-check suite (fake local registry, no token needed)"
+  if node scripts/test-update-check.mjs; then
+    ok "update-check suite passed"
+  else
+    SUITE_OK=0
+    warn "update-check suite reported failures"
+  fi
+
   # The full suite needs a *live* token. Check it first so that a dead token is
   # reported as a credential problem, not mistaken for a code regression.
   ENV_TOKEN=""
@@ -425,7 +439,9 @@ if [[ $SKIP_TESTS -eq 0 ]]; then
     )"
     if [[ "$TOKEN_STATUS" == "OK" ]]; then
       ok "token accepted — running full ${EXPECTED_TOOLS}-tool suite"
-      SUITE_OK=1
+      # NOTE: do not reset SUITE_OK here — it already carries the hermetic
+      # update-check result from above, and clobbering it would let a failure
+      # there slip through to publish.
       if node scripts/test-all-tools.mjs; then
         ok "full suite passed"
       else
@@ -442,9 +458,6 @@ if [[ $SKIP_TESTS -eq 0 ]]; then
         SUITE_OK=0
         warn "facet suite reported failures"
       fi
-      if [[ $SUITE_OK -eq 0 ]]; then
-        confirm "publish anyway despite test failures?"
-      fi
     else
       warn "token REJECTED by the API:"
       printf '%s\n' "$TOKEN_STATUS" | sed 's/^/       /'
@@ -454,8 +467,20 @@ if [[ $SKIP_TESTS -eq 0 ]]; then
       confirm "publish anyway without a verified token?"
     fi
   fi
+
+  # Single unified gate, outside the token branch: it must fire even when the
+  # token was missing/rejected, because the hermetic update-check suite ran
+  # regardless and its result still lives in SUITE_OK.
+  if [[ $SUITE_OK -eq 0 ]]; then
+    # Log the decision explicitly. confirm() returns silently under --yes, so
+    # without this line a CI run would publish over failing tests leaving no
+    # trace in the log of why that was allowed.
+    warn "one or more test suites FAILED — proceeding would ship a known-broken release"
+    confirm "publish anyway despite test failures?"
+    warn "proceeding despite test failures (explicitly confirmed)"
+  fi
 else
-  warn "--skip-tests: full suite skipped"
+  warn "--skip-tests: all suites skipped"
 fi
 
 # ---------------------------------------------------------------------------

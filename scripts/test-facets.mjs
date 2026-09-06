@@ -43,6 +43,12 @@ for (const [k, v] of Object.entries(dotenv)) {
   env[k] = v;
 }
 
+// Silence the npm update check: this suite asserts yaohai-facets behaviour, and
+// the check would add a live registry round-trip plus nondeterministic stderr
+// noise (stdio is inherited below). The update check has its own hermetic
+// suite: scripts/test-update-check.mjs.
+env.YAOHAI_MCP_UPDATE_CHECK = "0";
+
 const child = spawn("node", [join(PROJECT_ROOT, "dist/index.js")], {
   env,
   stdio: ["pipe", "pipe", "inherit"],

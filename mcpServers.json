@@ -4,7 +4,7 @@
     "drugsea": {
       "type": "stdio",
       "command": {
-        "args": ["npx", "@kinginsun/mcp-drugsea"],
+        "args": ["npx", "-y", "@kinginsun/mcp-drugsea@latest"],
         "env": {
           "YAOHAI_MCP_TOKEN": "${YAOHAI_MCP_TOKEN}"
         }

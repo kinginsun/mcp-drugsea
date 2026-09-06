@@ -59,7 +59,11 @@ let pendingResolve = null;
 
 const child = spawn("node", [SERVER], {
   stdio: ["pipe", "pipe", "pipe"],
-  env: process.env,
+  // Silence the npm update check: this suite tests tool behaviour, and the
+  // check would add a live registry round-trip plus nondeterministic stderr
+  // noise (it is echoed with a [server stderr] prefix below). The update check
+  // has its own hermetic suite: scripts/test-update-check.mjs.
+  env: { ...process.env, YAOHAI_MCP_UPDATE_CHECK: "0" },
 });
 
 child.stderr.on("data", (d) => {

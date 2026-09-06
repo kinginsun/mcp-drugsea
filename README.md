@@ -16,11 +16,68 @@ The server forwards tool calls to **`https://db3.drugsea.cn/api`** with personal
 npm install -g @kinginsun/mcp-drugsea
 ```
 
-Or run without installing:
+Or run without installing (`@latest` makes npx re-resolve the newest published version each launch instead of pinning to its cache):
 
 ```bash
-npx -y @kinginsun/mcp-drugsea
+npx -y @kinginsun/mcp-drugsea@latest
 ```
+
+## Updating
+
+How updates reach you depends on how you installed the server.
+
+### 1. `npx` with `@latest` — automatic (recommended)
+
+The MCP configs in this README use:
+
+```json
+"args": ["-y", "@kinginsun/mcp-drugsea@latest"]
+```
+
+`@latest` makes npx resolve the newest published version from the registry on every launch (registry metadata is cached locally for up to ~5 minutes), so you pick up new releases just by reloading the MCP server. No action needed.
+
+If your config uses the **bare package name** (`"-y", "@kinginsun/mcp-drugsea"`), npx keys its cache by the exact package argument and may keep serving a stale version. Add `@latest` and reload.
+
+### 2. Global install — manual
+
+`npm install -g` pins the version you installed; nothing updates it automatically.
+
+```bash
+npm update -g @kinginsun/mcp-drugsea
+npm ls -g @kinginsun/mcp-drugsea      # confirm the new version
+```
+
+### 3. Stuck on an old version? Clear the npx cache
+
+`npm cache clean --force` does **not** touch the npx cache — that is the usual reason an update appears not to take effect. npm 11 has dedicated subcommands:
+
+```bash
+npm cache npx ls                       # list cached npx entries
+npm cache npx rm <key>                 # remove the stale entry for this package
+```
+
+Older npm versions: remove the cache directory manually (`rm -rf ~/.npm/_npx`; on Windows `%LOCALAPPDATA%\npm-cache\_npx`).
+
+### In-server update notice
+
+Every launch performs a **non-blocking** version check against the registry and, when a newer version is published, reports it on two channels:
+
+- **stderr** — shown in your MCP client's server log panel;
+- **an MCP `notifications/message` log notification** (`level: warning`).
+
+The notice includes the exact commands above. It never blocks startup, never writes to stdout (which carries JSON-RPC), and fails silently when the registry is unreachable — results are cached for 24h so repeated launches do not re-query.
+
+Disable it with `YAOHAI_MCP_UPDATE_CHECK=0`. Behind a proxy or using an npm mirror, set `YAOHAI_NPM_REGISTRY` to your registry origin.
+
+### Pinning a version
+
+Prefer stability over freshness? Pin an exact version or a range instead of `@latest`:
+
+```json
+"args": ["-y", "@kinginsun/mcp-drugsea@0.4.0"]
+```
+
+A range such as `@^0.4.0` auto-updates within `0.4.x` only, which avoids picking up breaking changes from a future minor release.
 
 ## Configuration
 
@@ -61,6 +118,8 @@ On db3, direct GET list routes may return encrypted payloads; this client auto-r
 | `YAOHAI_BASE_URL` | `https://db3.drugsea.cn/api` | API origin (no trailing slash). MCP: `/g/mcp/yaohai/*` |
 | `YAOHAI_VERIFY_SSL` | `true` | Set `false` / `0` / `off` to skip TLS certificate verification (needed on some prod hosts) |
 | `YAOHAI_USE_MCP_LIST` | auto on db3 | Force product/reg search via MCP POST instead of GET |
+| `YAOHAI_MCP_UPDATE_CHECK` | enabled | Set `0` / `false` / `off` to disable the startup version check (see [Updating](#updating)) |
+| `YAOHAI_NPM_REGISTRY` | `https://registry.npmjs.org` | Registry used by the version check. Point at a mirror if npmjs.org is unreachable from your network |
 
 ### Cursor MCP (`~/.cursor/mcp.json`)
 
@@ -69,7 +128,7 @@ On db3, direct GET list routes may return encrypted payloads; this client auto-r
   "mcpServers": {
     "drugsea": {
       "command": "npx",
-      "args": ["-y", "@kinginsun/mcp-drugsea"],
+      "args": ["-y", "@kinginsun/mcp-drugsea@latest"],
       "env": {
         "YAOHAI_MCP_TOKEN": "ysk_your_token_here"
       }
@@ -85,7 +144,7 @@ On db3, direct GET list routes may return encrypted payloads; this client auto-r
   "mcpServers": {
     "drugsea": {
       "command": "npx",
-      "args": ["-y", "@kinginsun/mcp-drugsea"],
+      "args": ["-y", "@kinginsun/mcp-drugsea@latest"],
       "env": {
         "YAOHAI_MCP_TOKEN": "ysk_your_token_here"
       }
@@ -178,7 +237,7 @@ Add the server to your client config so it auto-starts. Example for Cursor (`~/.
   "mcpServers": {
     "drugsea": {
       "command": "npx",
-      "args": ["-y", "@kinginsun/mcp-drugsea"],
+      "args": ["-y", "@kinginsun/mcp-drugsea@latest"],
       "env": {
         "YAOHAI_MCP_TOKEN": "ysk_your_token_here"
       }
@@ -195,7 +254,7 @@ Either run via npx on demand (no install needed), or install globally / from sou
 
 ```bash
 # Option A: run without installing (what the MCP configs above do)
-npx -y @kinginsun/mcp-drugsea
+npx -y @kinginsun/mcp-drugsea@latest
 
 # Option B: global install
 npm install -g @kinginsun/mcp-drugsea
@@ -229,17 +288,19 @@ printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"1.0"}}}' \
   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-  | YAOHAI_MCP_TOKEN=$YAOHAI_MCP_TOKEN npx -y @kinginsun/mcp-drugsea \
-  | tail -1 | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const m=JSON.parse(d);console.log('tools:',m.result.tools.length)})"
+  | YAOHAI_MCP_TOKEN=$YAOHAI_MCP_TOKEN npx -y @kinginsun/mcp-drugsea@latest \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{for(const l of d.split('\n')){if(!l.trim())continue;let m;try{m=JSON.parse(l)}catch{continue}if(m.id===2)console.log('tools:',m.result.tools.length)}})"
 ```
 
-Expected: `tools: 12`.
+Expected: `tools: 13`.
+
+The filter selects the response with `"id":2` rather than piping through `tail -1`, because the server may also emit a `notifications/message` (version-update notice) on stdout. Both are valid JSON-RPC, but only one is the answer you asked for.
 
 One-liner variant without the handshake (also works with this server):
 
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
-  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea
+  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea@latest
 ```
 
 ### Step 4 — Test real tool calls
@@ -247,20 +308,20 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
 ```bash
 # Catalog lookup (no external DB data needed)
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"yaohai-catalog","arguments":{"q":"医保"}}}' \
-  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea
+  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea@latest
 
 # China marketed products search
 echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"product-cn-search","arguments":{"query":{"drug_name":"阿司匹林"},"limit":3}}}' \
-  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea
+  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea@latest
 
 # Global panorama search
 echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"yaohai-global-search","arguments":{"q":"阿司匹林","limit":3}}}' \
-  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea
+  | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea@latest
 ```
 
 Expected: each response has `"isError":false` and non-empty `content`.
 
-### Step 5 — Full 12-tool suite (from source)
+### Step 5 — Full 13-tool suite (from source)
 
 ```bash
 git clone https://github.com/kinginsun/mcp-drugsea.git
@@ -290,6 +351,9 @@ After reloading MCP servers in the client, ask the agent:
 | `mcp-drugsea: command not found` when running npx | You are inside the package source dir — run from another directory or use `node dist/index.js` |
 | Empty/encrypted payload from product/reg GET | Use default db3 base URL (auto MCP POST routing) or set `YAOHAI_USE_MCP_LIST=true` |
 | TLS errors on some hosts | Set `YAOHAI_VERIFY_SSL=false` |
+| Client keeps running an old version | npx cache is keyed by the exact package arg — use `@latest` in `args`, or clear it with `npm cache npx ls` / `npm cache npx rm <key>`. See [Updating](#updating). |
+| Global install never updates | `npm install -g` pins the version — run `npm update -g @kinginsun/mcp-drugsea` |
+| No update notice appears | Expected when you are already current, when the registry is unreachable (check fails silently), or when `YAOHAI_MCP_UPDATE_CHECK=0`. Clients also need the server's `logging` capability, so check the MCP server log panel for the stderr line as well. |
 
 ## Manual stdio test
 
@@ -310,7 +374,7 @@ echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"product-cn
 
 ## Releasing (maintainers)
 
-`publish.sh` releases the package to npm (which is what makes `npx -y @kinginsun/mcp-drugsea` work). It syncs `src/index.ts`'s `PACKAGE_VERSION` with `package.json`, builds clean, audits the tarball for leaked tokens, runs the 12-tool suite, commits + tags, then publishes and pushes.
+`publish.sh` releases the package to npm (which is what makes `npx -y @kinginsun/mcp-drugsea@latest` work). It syncs `src/index.ts`'s `PACKAGE_VERSION` with `package.json`, builds clean, audits the tarball for leaked tokens, runs the 13-tool suite plus the facet and update-check suites, commits + tags, then publishes and pushes.
 
 ```bash
 npm login                # once, with rights on the @kinginsun scope

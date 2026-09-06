@@ -5,6 +5,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 60000
     description: "List Yaohai / DrugSea databases"
   yaohai-search:
@@ -12,6 +15,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 60000
     description: "Search a single Yaohai database"
   yaohai-detail:
@@ -19,6 +25,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 60000
     description: "Fetch one Yaohai record detail"
   yaohai-facets:
@@ -26,6 +35,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 60000
     description: "Facet distributions (条件筛选) for dbs databases; omit fields to list them"
   yaohai-global-search:
@@ -33,6 +45,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 60000
     description: "Global drug panorama search"
   product-cn-fields:
@@ -40,6 +55,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 10000
     description: "List product_cn search/filter fields"
   product-cn-search:
@@ -47,6 +65,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 60000
     description: "Search China marketed products (product_cn)"
   product-cn-facets:
@@ -54,6 +75,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 120000
     description: "Facet distributions for product_cn"
   product-cn-detail:
@@ -61,6 +85,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 60000
     description: "product_cn record detail"
   reg-cn-fields:
@@ -68,6 +95,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 10000
     description: "List reg_cn search/filter fields"
   reg-cn-search:
@@ -75,6 +105,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 60000
     description: "Search China CDE registration review (reg_cn)"
   reg-cn-facets:
@@ -82,6 +115,9 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 120000
     description: "Facet distributions for reg_cn"
   reg-cn-detail:
@@ -89,5 +125,8 @@ tools:
     command: ["node", "dist/index.js"]
     env:
       YAOHAI_MCP_TOKEN: "${YAOHAI_MCP_TOKEN}"
+      # From-source config: PACKAGE_VERSION is whatever is checked out, so the
+      # registry comparison is meaningless here. Silence it for dev runs.
+      YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 60000
     description: "reg_cn record detail"
