@@ -1,4 +1,4 @@
-# Agent Setup Guide — install mcp-drugsea + the `drugsea-explore` skill
+# Agent Setup Guide — install mcp-drugsea + the `drugsea` skill
 
 **Audience: you, the AI agent.** This page is a deterministic playbook. Follow the
 steps in order, run every verification gate, and stop at the first failure and
@@ -9,7 +9,7 @@ You are installing two things:
 | What | Why | Where it comes from |
 |---|---|---|
 | `@kinginsun/mcp-drugsea` MCP server | 13 tools that search all 63 DrugSea / 药海遨游 pharmaceutical databases (approvals, CDE reviews, trials, sales, tenders, 医保/集采, patents, companies, news…) | npm (`npx -y @kinginsun/mcp-drugsea@latest`) |
-| `drugsea-explore` skill | Teaches you *how to use those tools correctly*: database routing, field keys, facet discovery, query value grammar, and ~20 gotchas (silent query drops, version tells, `has_detail: false` DBs) | this repo, `skills/drugsea-explore/` (NOT bundled in the npm package) |
+| `drugsea` skill | Teaches you *how to use those tools correctly*: database routing, field keys, facet discovery, query value grammar, and ~20 gotchas (silent query drops, version tells, `has_detail: false` DBs) | this repo, `skills/drugsea/` (NOT bundled in the npm package) |
 
 Install **both**. The server without the skill leaves you guessing field names;
 the skill without the server has nothing to call.
@@ -131,9 +131,9 @@ Expected output: `tools: 13`.
 
 ---
 
-## Step 2 — Install the `drugsea-explore` skill
+## Step 2 — Install the `drugsea` skill
 
-The skill lives in this repo at `skills/drugsea-explore/` (one `SKILL.md` plus a
+The skill lives in this repo at `skills/drugsea/` (one `SKILL.md` plus a
 `reference/` folder with **10** files). It is **not** published to npm, so you
 install it by copying the folder into a skills directory your host scans:
 
@@ -149,14 +149,14 @@ prefer global so every project can search DrugSea. Ask the user if unclear.
 > **Maintainer note (do this once):** `skills/` is currently **untracked** in git,
 > so the *remote* install paths below only work after the folder is committed and
 > pushed. Until then, use the **local copy** path. To publish it:
-> `git add skills && git commit -m "docs: add drugsea-explore agent skill" && git push`.
+> `git add skills && git commit -m "docs: add drugsea agent skill" && git push`.
 
 ### Option A — local copy (works right now, from this checked-out repo)
 
 ```bash
 # From the repo root (the directory containing this AGENT_SETUP.md):
 mkdir -p ~/.cursor/skills                 # adapt to your host
-cp -R skills/drugsea-explore ~/.cursor/skills/
+cp -R skills/drugsea ~/.cursor/skills/
 ```
 
 ### Option B — remote clone (canonical, once `skills/` is on GitHub)
@@ -164,7 +164,7 @@ cp -R skills/drugsea-explore ~/.cursor/skills/
 ```bash
 git clone --depth 1 https://github.com/kinginsun/mcp-drugsea.git /tmp/mcp-drugsea
 mkdir -p ~/.cursor/skills                 # adapt to your host
-cp -R /tmp/mcp-drugsea/skills/drugsea-explore ~/.cursor/skills/
+cp -R /tmp/mcp-drugsea/skills/drugsea ~/.cursor/skills/
 rm -rf /tmp/mcp-drugsea
 ```
 
@@ -174,7 +174,7 @@ No git? Fetch the tarball instead:
 curl -fsSL https://github.com/kinginsun/mcp-drugsea/archive/refs/heads/main.tar.gz \
   | tar -xz -C /tmp mcp-drugsea-main/skills \
   && mkdir -p ~/.cursor/skills \
-  && cp -R /tmp/mcp-drugsea-main/skills/drugsea-explore ~/.cursor/skills/
+  && cp -R /tmp/mcp-drugsea-main/skills/drugsea ~/.cursor/skills/
 ```
 
 If Option B/C returns an empty or missing `skills/` folder, the skill has not been
@@ -184,8 +184,8 @@ pushed yet — fall back to Option A from a local checkout.
 into (e.g. `~/.cursor/skills`):
 
 ```bash
-test -f <SKILLS_DIR>/drugsea-explore/SKILL.md && echo "SKILL.md present"
-ls <SKILLS_DIR>/drugsea-explore/reference | wc -l   # expect 10
+test -f <SKILLS_DIR>/drugsea/SKILL.md && echo "SKILL.md present"
+ls <SKILLS_DIR>/drugsea/reference | wc -l   # expect 10
 ```
 
 Then confirm your host actually picked it up: the skill should appear in your
@@ -218,7 +218,7 @@ the skill is not loaded — re-check Step 2.
 Summarize what you installed:
 
 - MCP server `drugsea` (v0.5.0+, 13 tools) registered in `<config path>` — token stored in client `env`.
-- Skill `drugsea-explore` installed at `<skills path>` — read `SKILL.md` before any DrugSea search.
+- Skill `drugsea` installed at `<skills path>` — read `SKILL.md` before any DrugSea search.
 - Verification results (gate 1: 13 tools; gate 2: SKILL.md + 10 reference files; step 3: both calls OK).
 - Reminders: updates are automatic via `@latest` + server reload; the in-server
   version notice appears on stderr / as a log notification when npm has a newer
@@ -243,4 +243,4 @@ Summarize what you installed:
 | Search returns `total` equal to the whole database | You used an unknown field key — queries silently drop unknown keys. Load the skill and check field keys via `product-cn-fields` / `reg-cn-fields` / the `reference/db-*.md` files |
 
 Full server-side details: [README.md](README.md) → *Quick start for AI Agents*.
-Full tool-usage doctrine: `skills/drugsea-explore/SKILL.md` after installation.
+Full tool-usage doctrine: `skills/drugsea/SKILL.md` after installation.

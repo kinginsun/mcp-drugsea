@@ -1,5 +1,5 @@
 ---
-name: drugsea-explore
+name: drugsea
 description: One-stop search across all 63 DrugSea / 药海遨游 (Yaohai) pharmaceutical databases via the user-drugsea MCP tools. Use when the user asks about drug approvals, registrations, CDE reviews, clinical trials, sales, tenders, centralized procurement, insurance/essential-drug lists, patents, companies, package inserts, or regulatory news — in Chinese or English. Covers marketed vs pipeline routing, field meanings, accepted value types, facet filtering, ATC therapeutic classes, and detail drill-down.
 ---
 
