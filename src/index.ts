@@ -55,7 +55,7 @@ import {
   formatUpdateMessage,
 } from "./update-check.js";
 
-const PACKAGE_VERSION = "0.5.0";
+const PACKAGE_VERSION = "0.6.0";
 
 const YAOHAI_LIMIT_MAX = 50;
 const YAOHAI_LIMIT_DEFAULT = 10;

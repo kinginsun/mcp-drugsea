@@ -220,6 +220,8 @@ For the two dedicated ES routes use `product-cn-facets` / `reg-cn-facets` instea
 
 ## Quick start for AI Agents (install, configure, test)
 
+> **Agents: prefer [`AGENT_SETUP.md`](AGENT_SETUP.md).** It is the full install playbook and additionally covers installing the companion `drugsea-explore` skill (`skills/drugsea-explore/`), which teaches correct tool routing, field keys, facets, and query gotchas across all 63 databases. The section below installs the server only.
+
 This section is a step-by-step playbook an AI agent (or a human) can follow to install, configure, and verify this MCP server end to end.
 
 ### Prerequisites
