@@ -149,9 +149,14 @@ status. See [query-syntax.md](query-syntax.md#yaohai-facets-throws-where-search-
 
 ## Field selection
 
-List rows carry 40–60 fields, many of them internal (`ProductID`, `XUI`, `DrugUID`,
-`dp2_id`, `gcid`, `updated_at`, `created_at`, `related_drug_names`). **Never render the raw
-item object.**
+List rows carry 40–60 fields. The MCP layer already **strips** the pure-noise ones
+(`related_drug_names`, `ProductID`, `XUI`, `DrugUID`, `dp2_id`, `gcid`, `UniqueID`,
+`created_at`, `updated_at`, `timeline`, internal flags like
+`rows_excluded` / `is_47` / `has_detail`; plus `is_jicai` on `product_cn` and
+`conclusion_bak` / `orig_transact_status` / `slh2` on `reg_cn`), so they never reach
+you — do not expect them, and if one still appears (stale server build), ignore it.
+The rest are still business fields with no labels — **never render the raw item
+object.**
 
 Pick columns by question type:
 
@@ -184,8 +189,8 @@ Fields worth surfacing that users often ask about indirectly:
 **Ignore `is_jicai`.** `product_cn` rows carry both `is_jicai` and `is_guojia_jicai`, and
 they disagree — 国药准字H20051408 (立普妥) returns `is_jicai: "1"` but
 `is_guojia_jicai: "否"`. `is_jicai` appears nowhere in the backend or frontend source; it
-is a stale index column. `is_guojia_jicai` is the one the facet panel exposes and the one
-to quote.
+is a stale index column and is now **stripped from MCP output**. `is_guojia_jicai` is the
+one the facet panel exposes and the one to quote.
 
 ## Truncating long values
 
@@ -193,9 +198,8 @@ Several fields contain HTML or very long text. Strip and shorten:
 
 - `indication`, `indications`, `dosage_and_administration`, `pharmacological_and_toxicological`
   contain HTML (`<div>`, `<p>`, `\r\n\t`). Strip tags, collapse whitespace, truncate to
-  ~80–120 characters with an ellipsis.
-- `related_drug_names` can hold 100+ pipe-separated synonyms (one row had ~90). Show the
-  first 3–5 and say "等" / "and more".
+  ~80–120 characters with an ellipsis. (On `product_cn` *list* rows the last three are
+  stripped by the MCP layer — read them from `product-cn-detail` instead.)
 - `national_yibao` is a `;`-separated list of every insurance edition. Summarize as a range
   ("国乙 2019–2025 版") instead of listing all eight.
 

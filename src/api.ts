@@ -2,7 +2,7 @@ import http from "node:http";
 import https from "node:https";
 import { URL } from "node:url";
 import type { QueryObject } from "./types.js";
-import { normalizeRecord, parseFacetList } from "./normalize.js";
+import { normalizeRecord, parseFacetList, stripMcpFields } from "./normalize.js";
 import type { FacetField } from "./fields.js";
 
 export class MissingTokenError extends Error {
@@ -320,12 +320,17 @@ export async function mcpDbSearch(opts: {
           const row = item as { fields?: unknown; detail_url?: string };
           const flat = normalizeRecord(row.fields);
           if (
-            row.detail_url &&
             flat &&
             typeof flat === "object" &&
             !Array.isArray(flat)
           ) {
-            return { ...(flat as Record<string, unknown>), detail_url: row.detail_url };
+            const stripped = stripMcpFields(flat as Record<string, unknown>, {
+              dbname: opts.dbname,
+            });
+            if (row.detail_url) {
+              return { ...stripped, detail_url: row.detail_url };
+            }
+            return stripped;
           }
           return flat;
         }
@@ -357,7 +362,16 @@ export async function mcpDbDetail(
     dbname,
     id,
   })) as Record<string, unknown>;
-  return { dbname, id, ...content };
+  const detail = Array.isArray(content.detail)
+    ? content.detail.map((row) =>
+        row && typeof row === "object"
+          ? stripMcpFields(row as Record<string, unknown>, { dbname, isDetail: true })
+          : row
+      )
+    : content.detail && typeof content.detail === "object"
+      ? stripMcpFields(content.detail as Record<string, unknown>, { dbname, isDetail: true })
+      : content.detail;
+  return { dbname, id, ...content, detail };
 }
 
 export async function listSearch(opts: {
@@ -366,6 +380,7 @@ export async function listSearch(opts: {
   limit: number;
   offset: number;
   viewType: string;
+  dbname?: string;
 }): Promise<Record<string, unknown>> {
   const params: QueryObject = {
     ...opts.query,
@@ -379,6 +394,13 @@ export async function listSearch(opts: {
   const raw = result.raw;
   const content = raw.content ?? result.content;
   const items = normalizeRecord(content);
+  if (Array.isArray(items)) {
+    for (const it of items) {
+      if (it && typeof it === "object") {
+        stripMcpFields(it as Record<string, unknown>, { dbname: opts.dbname });
+      }
+    }
+  }
   const totalRaw = raw.tnum;
   const total =
     typeof totalRaw === "number"
@@ -397,14 +419,28 @@ export async function listSearch(opts: {
   };
 }
 
-export async function fetchDetail(path: string, id: string): Promise<Record<string, unknown>> {
+export async function fetchDetail(
+  path: string,
+  id: string,
+  dbname = ""
+): Promise<Record<string, unknown>> {
   const result = await yaohaiGet(path, {});
   if (!result.ok) {
     throw new ApiError(result.error, result.status, result.raw);
   }
+  const detail = normalizeRecord(result.content);
+  if (Array.isArray(detail)) {
+    for (const it of detail) {
+      if (it && typeof it === "object") {
+        stripMcpFields(it as Record<string, unknown>, { dbname, isDetail: true });
+      }
+    }
+  } else if (detail && typeof detail === "object") {
+    stripMcpFields(detail as Record<string, unknown>, { dbname, isDetail: true });
+  }
   return {
     id,
-    detail: normalizeRecord(result.content),
+    detail,
   };
 }
 

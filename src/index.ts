@@ -55,7 +55,7 @@ import {
   formatUpdateMessage,
 } from "./update-check.js";
 
-const PACKAGE_VERSION = "0.7.0";
+const PACKAGE_VERSION = "0.7.1";
 
 const YAOHAI_LIMIT_MAX = 50;
 const YAOHAI_LIMIT_DEFAULT = 10;
@@ -542,6 +542,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               limit,
               offset,
               viewType,
+              dbname: "product_cn",
             });
         return ok(content);
       }
@@ -562,7 +563,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ? await mcpDbDetail("product_cn", validated.id)
           : await fetchDetail(
               `${PRODUCT_CN_DETAIL_PATH}/${encodeId(validated.id)}`,
-              validated.id
+              validated.id,
+              "product_cn"
             );
         return ok(content);
       }
@@ -594,6 +596,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               limit,
               offset,
               viewType,
+              dbname: "reg_cn",
             });
         return ok(content);
       }
@@ -614,7 +617,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ? await mcpDbDetail("reg_cn", validated.id)
           : await fetchDetail(
               `${REG_CN_DETAIL_PATH}/${encodeId(validated.id)}`,
-              validated.id
+              validated.id,
+              "reg_cn"
             );
         return ok(content);
       }
