@@ -372,7 +372,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 
 **Category** 市场情报 · **Route type** `custom` · **Frontend** `/sales/cn` · **API path** `/c/drug/hosp` · **Detail** NO
 
-*Catalog keywords:* 销售, 医院, 市场份额, IQVIA
+*Catalog keywords:* 销售, 医院, 市场份额
 
 | MCP tool | |
 |---|---|

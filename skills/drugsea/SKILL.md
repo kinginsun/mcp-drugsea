@@ -173,7 +173,7 @@ For "what's the competitive landscape of X", query **both** and say which came f
 | 国家集采中选结果 | `jicai` | [db-access-sales.md](reference/db-access-sales.md) |
 | 集采目录 / 品种 | `jicai_mulu` | [db-access-sales.md](reference/db-access-sales.md) |
 | 招标中标 (挂网价) | `zhaobiao` | [db-access-sales.md](reference/db-access-sales.md) |
-| 医院销售 (IQVIA) | `sales_cn` | [db-access-sales.md](reference/db-access-sales.md) |
+| 医院销售 | `sales_cn` | [db-access-sales.md](reference/db-access-sales.md) |
 | 全球年报销售额 | `sales_global` | [db-access-sales.md](reference/db-access-sales.md) |
 | 全球药品销售明细 | `drugsales` | [db-access-sales.md](reference/db-access-sales.md) |
 | 生物制品批签发 (疫苗) | `bio_issue` | [db-access-sales.md](reference/db-access-sales.md) |
