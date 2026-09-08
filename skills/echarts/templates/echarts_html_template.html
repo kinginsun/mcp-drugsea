@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ECharts Visualization</title>
+  <!-- Load ECharts from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f5f7fa;
+      font-family: sans-serif;
+    }
+    #chart-container {
+      width: 80vw;
+      height: 80vh;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="chart-container"></div>
+
+  <script>
+    // Initialize the ECharts instance
+    var chartDom = document.getElementById('chart-container');
+    var myChart = echarts.init(chartDom);
+
+    // Specify the configuration items and data for the chart
+    var option = {
+      title: {
+        text: 'Sample ECharts Visualization',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis'
+      },
+      legend: {
+        bottom: 0
+      },
+      grid: {
+        left: '5%',
+        right: '5%',
+        bottom: '10%',
+        containLabel: true
+      },
+      dataset: {
+        source: [
+          ['Category', 'Metric A', 'Metric B'],
+          ['Mon', 43.3, 85.8],
+          ['Tue', 83.1, 73.4],
+          ['Wed', 86.4, 65.2],
+          ['Thu', 72.4, 53.9],
+          ['Fri', 90.1, 68.1],
+          ['Sat', 65.4, 82.5],
+          ['Sun', 55.2, 70.0]
+        ]
+      },
+      xAxis: {
+        type: 'category'
+      },
+      yAxis: {
+        type: 'value'
+      },
+      series: [
+        { 
+          type: 'bar',
+          itemStyle: { borderRadius: [4, 4, 0, 0] }
+        },
+        { 
+          type: 'line',
+          smooth: true,
+          symbolSize: 8,
+          lineStyle: { width: 3 }
+        }
+      ]
+    };
+
+    // Set the option
+    myChart.setOption(option);
+
+    // Make the chart responsive
+    window.addEventListener('resize', function() {
+      myChart.resize();
+    });
+  </script>
+</body>
+</html>

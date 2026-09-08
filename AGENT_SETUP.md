@@ -4,15 +4,17 @@
 steps in order, run every verification gate, and stop at the first failure and
 report it to the user. Estimated time: 3–5 minutes.
 
-You are installing two things:
+You are installing two required things, plus one optional skill:
 
 | What | Why | Where it comes from |
 |---|---|---|
 | `@kinginsun/mcp-drugsea` MCP server | 13 tools that search all 63 DrugSea / 药海遨游 pharmaceutical databases (approvals, CDE reviews, trials, sales, tenders, 医保/集采, patents, companies, news…) | npm (`npx -y @kinginsun/mcp-drugsea@latest`) |
 | `drugsea` skill | Teaches you *how to use those tools correctly*: database routing, field keys, facet discovery, query value grammar, and ~20 gotchas (silent query drops, version tells, `has_detail: false` DBs) | this repo, `skills/drugsea/` (NOT bundled in the npm package) |
+| `echarts` skill *(optional)* | Chart/visualization guidance (ECharts 6.x option configs, dataset best practices, SSR) plus bundled `references/`, `templates/`, and a `scripts/generate_chart.py` helper — useful when presenting DrugSea query results as charts | this repo, `skills/echarts/` (NOT bundled in the npm package) |
 
-Install **both**. The server without the skill leaves you guessing field names;
-the skill without the server has nothing to call.
+Install **both** required items. The server without the skill leaves you guessing field names;
+the skill without the server has nothing to call. Install the `echarts` skill too if you want
+publishable charts (e.g. sales/集采 trends) — see Step 2b.
 
 ---
 
@@ -146,10 +148,11 @@ install it by copying the folder into a skills directory your host scans:
 Prefer a project-scoped install when the workspace is dedicated to pharma work;
 prefer global so every project can search DrugSea. Ask the user if unclear.
 
-> **Maintainer note (do this once):** `skills/` is currently **untracked** in git,
-> so the *remote* install paths below only work after the folder is committed and
-> pushed. Until then, use the **local copy** path. To publish it:
-> `git add skills && git commit -m "docs: add drugsea agent skill" && git push`.
+> **Maintainer note (do this once):** `skills/drugsea/` is tracked in git, but
+> `skills/echarts/` is currently **untracked**, so the *remote* install paths
+> below only work for it after the folder is committed and pushed. Until then,
+> use the **local copy** path. To publish it:
+> `git add skills/echarts && git commit -m "docs: add echarts agent skill" && git push`.
 
 ### Option A — local copy (works right now, from this checked-out repo)
 
@@ -194,6 +197,49 @@ description starts with *"One-stop search across all 63 DrugSea / 药海遨游�
 
 ---
 
+## Step 2b — Install the `echarts` skill (optional)
+
+The `echarts` skill lives in this repo at `skills/echarts/` (one `SKILL.md` plus
+`references/`, `templates/`, and a `scripts/generate_chart.py` helper). Like the
+`drugsea` skill it is **not** published to npm — install it by copying the folder
+into the *same* skills directory you chose in Step 2 (`<SKILLS_DIR>`, e.g.
+`~/.cursor/skills`). Install it when you want to turn DrugSea query results
+(sales, 集采, trial trends…) into interactive charts.
+
+### Option A — local copy (works right now, from this checked-out repo)
+
+```bash
+# From the repo root (the directory containing this AGENT_SETUP.md):
+cp -R skills/echarts <SKILLS_DIR>/
+```
+
+### Option B — remote clone (once `skills/echarts/` is on GitHub)
+
+```bash
+git clone --depth 1 https://github.com/kinginsun/mcp-drugsea.git /tmp/mcp-drugsea
+cp -R /tmp/mcp-drugsea/skills/echarts <SKILLS_DIR>/
+rm -rf /tmp/mcp-drugsea
+```
+
+If Option B returns an empty or missing `skills/echarts/` folder, it has not been
+pushed yet — fall back to Option A from a local checkout.
+
+**Verification gate 2b** — substitute `<SKILLS_DIR>` with the same directory as in Step 2:
+
+```bash
+test -f <SKILLS_DIR>/echarts/SKILL.md && echo "SKILL.md present"
+test -f <SKILLS_DIR>/echarts/references/echarts_option_cheatsheet.md && echo "cheatsheet present"
+test -f <SKILLS_DIR>/echarts/templates/echarts_html_template.html && echo "template present"
+test -f <SKILLS_DIR>/echarts/scripts/generate_chart.py && echo "script present"
+```
+
+All four lines must echo. The skill (like `drugsea`) is self-contained — it does
+**not** require the `echarts` npm package; the template and `generate_chart.py`
+load ECharts from the jsDelivr CDN, so a generated `chart.html` opens directly in
+a browser with no build step. Reload the window so the host indexes the new skill.
+
+---
+
 ## Step 3 — Verify end to end (two real calls)
 
 Through the MCP client (not the shell), make two tool calls:
@@ -219,7 +265,8 @@ Summarize what you installed:
 
 - MCP server `drugsea` (v0.5.0+, 13 tools) registered in `<config path>` — token stored in client `env`.
 - Skill `drugsea` installed at `<skills path>` — read `SKILL.md` before any DrugSea search.
-- Verification results (gate 1: 13 tools; gate 2: SKILL.md + 10 reference files; step 3: both calls OK).
+- *(Optional)* Skill `echarts` installed at `<skills path>/echarts` — read its `SKILL.md` before generating charts.
+- Verification results (gate 1: 13 tools; gate 2: SKILL.md + 10 reference files; gate 2b if installed: 4 echarts files; step 3: both calls OK).
 - Reminders: updates are automatic via `@latest` + server reload; the in-server
   version notice appears on stderr / as a log notification when npm has a newer
   release. Skill updates require re-running Step 2 (`git pull` the repo and
