@@ -143,32 +143,34 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (2 terms) |
 | Detail | `yaohai-detail` |
 
-> `item` works (7 rows for 齐鲁). Company-level, not product-level.
+> Company-level, not product-level. Catalog `search_fields` match the SPA「关键词查询」panel. **企业名称 is `manufacture`**, not `company` (silently dropped). Social-credit key is **`CreditCode`** (case-sensitive). `province` is a facet filter, not a keyword box. `item` still works as a broad match (7 rows for 齐鲁).
 
 ### Search fields
 
 | Key | Verified | Label |
 |---|---|---|
-| `company` | ✓ | 企业名称 |
-| `province` | ✓ | 省份 |
+| `manufacture` | | 企业名称 |
+| `legal_representative` | | 法人代表 |
+| `CreditCode` | | 社会信用代码 |
+| `classification` | | 分类码 |
+| `serial_num` | | 许可证编号 |
+| `production_range` | | 生产范围 |
 
 ### Facet / filter fields
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* `custom`-route database. `yaohai-facets` v0.4.0 scoped its catalog to `dbs` routes only, so this was never a candidate. The backend aggregation endpoint does exist (`GET /enterprise/eslist/{filter}`) and covers the 2 `terms` fields below — a later MCP release could expose it, but today no MCP tool reaches it.
+`yaohai-facets` fetches terms buckets (`GET /enterprise/eslist/{field}`). Date pickers are filter-only.
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `province` | ✓ | n/a | 所在省份 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `std_classification` | | n/a | 分类码 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `date_of_issue` | | n/a | 发证日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
-| `date_of_expiry` | | n/a | 有效期至 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `province` | ✓ | ✓ | 所在省份 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `std_classification` | | ✓ | 分类码 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `date_of_issue` | | SPA | 发证日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `date_of_expiry` | | SPA | 有效期至 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
 
 ### Examples
 
@@ -178,7 +180,19 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 {"query": {"item": "齐鲁"}, "limit": 20}
 ```
 
-**Companies by province**
+**By company name — use `manufacture`, not `company`**
+
+```jsonc
+{"query": {"manufacture": "齐鲁"}, "limit": 20}
+```
+
+**✗ WRONG — `company` is silently dropped**
+
+```jsonc
+{"query": {"company": "齐鲁"}, "limit": 20}
+```
+
+**Companies by province (facet, not a keyword box)**
 
 ```jsonc
 {"query": {"province": "山东省"}, "limit": 20}
@@ -378,41 +392,45 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (3) |
 | Detail | `yaohai-detail` |
 
-> Package inserts (说明书). Long free-text fields; keyword search works well.
+> Package inserts (说明书). Catalog `search_fields` match the SPA「关键词查询」panel. **企业 is `manufacture`**, not `company` (silently dropped). There is no `item` keyword box.
 
 ### Search fields
 
 | Key | Verified | Label |
 |---|---|---|
 | `drug_name` | | 药品名称 |
-| `company` | | 企业名称 |
-| `item` | | 全文检索 |
-
-*None of these keys were exercised live — the list is read from the catalog. Confirm a key works by checking that `total` drops (see [query-syntax.md](query-syntax.md#the-real-silent-failure-unknown-field-keys)).*
+| `manufacture` | | 企业 |
+| `indication` | | 适应症 |
+| `brand_name` | | 商品名 |
+| `auth_num` | | 批准文号 |
 
 ### Facet / filter fields
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* `custom`-route database. `yaohai-facets` v0.4.0 scoped its catalog to `dbs` routes only, so this was never a candidate. The backend aggregation endpoint does exist (`GET /sms/eslist/{filter}`) and covers the 3 `terms` fields below — a later MCP release could expose it, but today no MCP tool reaches it.
+`yaohai-facets` fetches terms buckets (`GET /sms/eslist/{field}`).
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `source` | | n/a | 批准国家 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `has_sms` | | n/a | 全文附件 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `has_package_pics` | | n/a | 包装图片 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `source` | | ✓ | 批准国家 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `has_sms` | | ✓ | 全文附件 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `has_package_pics` | | ✓ | 包装图片 | multiple — exact string or `string[]`, copy the facet value verbatim |
 
 ### Examples
 
 **Package insert lookup**
 
 ```jsonc
-{"query": {"item": "阿托伐他汀"}, "limit": 20}
+{"query": {"drug_name": "阿托伐他汀"}, "limit": 20}
+```
+
+**✗ WRONG — `company` is silently dropped; use `manufacture`**
+
+```jsonc
+{"query": {"company": "齐鲁"}, "limit": 20}
 ```
 
 ---

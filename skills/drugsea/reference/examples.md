@@ -236,8 +236,9 @@ To get the actual submission records afterwards, switch to `reg_cn`:
 
 **Routing.** Trials → `ct_cn` (China) and/or `ct_global` (worldwide).
 
-**Keyword prep.** On `ct_cn`, `item` matches the trial **title and indication**, while
-`drug_name` matches only the drug field. Coverage differs a lot:
+**Keyword prep.** On `ct_cn`, `item` is the SPA 全文框（药名/企业/适应症/登记号）;
+`drug_name` is 相关药物 only. Coverage differs a lot. 申报企业 is `study_sponsor`,
+not `sponsor`.
 
 ```jsonc
 // yaohai-search dbname=ct_cn
@@ -248,7 +249,8 @@ To get the actual submission records afterwards, switch to `reg_cn`:
 A drug mentioned only in a trial title is found by `item` but not `drug_name`. Start with
 `item`, narrow with `drug_name` for precision.
 
-`ct_global` is English-only:
+`ct_global` is English-only. Related drug is `interventions` (plural); 申报企业 is
+`study_sponsor`; 登记号 is `identifier`:
 
 ```jsonc
 {"query": {"item": "atorvastatin"}, "limit": 20}    // → 961
@@ -360,7 +362,7 @@ Then the package insert, which carries the full 药理作用 text:
 
 ```jsonc
 // yaohai-search dbname=shuomingshu
-{"query": {"item": "奥希替尼"}, "limit": 5}
+{"query": {"drug_name": "奥希替尼"}, "limit": 5}
 ```
 
 `product_cn` detail also returns `pharmacological_and_toxicological` as HTML. Strip tags

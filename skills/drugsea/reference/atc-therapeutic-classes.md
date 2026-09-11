@@ -14,34 +14,27 @@ filter.
 | `product_cn` | `ATC_code` | Facet + filter. **Single letter only** (`C`, `L`, …). |
 | `reg_cn` | `ATC_code` (labelled ATC一级分类), `ATC` (tree) | `ATC_code` = single letter. `ATC` accepts full tree codes. |
 | `product_us` | — | No ATC facet; use `SubmissionClassification` / `drug_type`. |
-| `product_eu` | `ATC_code`, `therapeutic_area` | **Filter-only** — no MCP facet tool, so you cannot enumerate values. See below. |
-| `product_jp` | `ATC_code`, `ATC` (tree) | Same letter semantics as `product_cn`. **Filter-only** — no MCP facet tool. |
+| `product_eu` | `ATC_code`, `therapeutic_area` | SPA 条件筛选; `yaohai-facets` fetches `GET /ema_drugs/eslist/{field}`. |
+| `product_jp` | `ATC_code`, `ATC` (tree) | Same letter semantics as `product_cn`. `ATC_code` via `yaohai-facets`; `ATC` tree is `GET /c/get/atc/index2`. |
 | `uk_emc` | `ATC_code` (治疗领域), `ATC` (tree) | `ATC_code` is facetable via `yaohai-facets`; the `ATC` tree is filter-only. |
 | `hma` | `ATC` (tree) | Tree field only — `yaohai-facets` cannot aggregate it, so filter-only. |
-| `generic_cn` | `ATC_code` | MySQL engine; letter filter. |
-| `sales_cn` | `ATC_code` (治疗分类) | Values are `letter:中文` strings, see below. |
+| `generic_cn` | `ATC_code` | Defined in the panel file but **not rendered**. Do not treat as SPA 条件筛选. Letter filter may still work in `query`. |
+| `sales_cn` | `ATC_code` (治疗分类) | `yaohai-facets` static list; values are `letter:中文`. |
 | `drugsales` | — | Use `drug_type` / `administration_route`. |
 
-### You cannot facet every ATC field
+### You cannot fetch every ATC distribution through MCP
 
-Only three of the databases above expose ATC to a facet tool: `product_cn` and `reg_cn`
-(their dedicated tools) and `uk_emc` (`yaohai-facets`, field `ATC_code`). For
-`product_eu`, `product_jp`, `hma`, `generic_cn` and `sales_cn` ATC is **filter-only**:
-you can narrow results with a letter you already know, but there is no call that lists
-the values present.
+`product_cn` / `reg_cn` (dedicated tools), `uk_emc`, `product_eu`, and `product_jp`
+expose `ATC_code` to an MCP facet tool. `sales_cn` ATC is a static `letter:中文` list
+via `yaohai-facets` (`count` null). `generic_cn` does not render ATC. `hma` is tree-only.
 
 That has two consequences:
 
-- **Do not promise a distribution you cannot produce.** For `product_eu` the honest answer
-  to "what therapeutic areas are in there?" is that the letters come from the WHO tree
-  (table below), not from the data — say so rather than guessing at bucket counts.
-- **Tree fields (`ATC`) are never facetable.** `yaohai-facets` aggregates `terms` fields
-  only; passing `ATC` in `fields` throws `Unknown facet field(s)`. Use it in `query` to
-  filter, and facet the sibling `ATC_code` letter instead.
-
-Verified live 2026-09-06 — `uk_emc` discovery returns exactly three fields
-(`drug_type`, `legal_category`, `ATC_code`), and `product_eu` returns
-`No facet fields known for dbname "product_eu"`.
+- **Do not promise a distribution you cannot produce via MCP.** Date/tree ATC fields
+  are not in `yaohai-facets`.
+- **Tree fields (`ATC`) are never in `yaohai-facets`.** Passing `ATC` in `fields` throws
+  `Unknown facet field(s)`. Use it in `query` to filter, and facet the sibling `ATC_code`
+  letter instead where that tool exists.
 
 ### Field names are case-sensitive
 

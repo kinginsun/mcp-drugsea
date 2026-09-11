@@ -19,23 +19,22 @@ The three highest-traffic databases plus clinical trials. Most questions land he
 | Facets | `product-cn-facets` |
 | Detail | `product-cn-detail` |
 
-> Marketed China drugs. Use the dedicated `product-cn-*` tools, not `yaohai-search`. Default `search_mode` is **3** (partial). Items come back **flat** (`items[0].drug_name`), and `detail_url` in list rows is `https://db.drugsea.cn/api/disabled` — drill down with `product-cn-detail` using the row's `id`. See [query-syntax.md](query-syntax.md) for `search_mode`, the `gj_passed_yizhi` virtual OR field, and `in_sfda` behaviour.
+> Marketed China drugs. Use the dedicated `product-cn-*` tools, not `yaohai-search`. Catalog `search_fields` match the SPA「关键词查询」panel. Default `search_mode` is **3** (部分匹配). 「仅有效文号」is `only_active=1`. Items come back **flat** (`items[0].drug_name`), and `detail_url` in list rows is `https://db.drugsea.cn/api/disabled` — drill down with `product-cn-detail` using the row's `id`. See [query-syntax.md](query-syntax.md) for `search_mode`, the `gj_passed_yizhi` virtual OR field, and `in_sfda` behaviour.
 
-### Common search fields (from `*-fields`)
+### Common search fields (from `*-fields` / SPA keyword panel)
 
 | Key | Verified | Meaning |
 |---|---|---|
-| `item` | ✓ | 全文检索（主搜索框） |
-| `drug_name` | ✓ | 药品名称 |
+| `item` | ✓ | 中英药名/企业/适应症/批准文号 |
+| `drug_name` | ✓ | 中文药名 |
 | `manufacture` | ✓ | 生产企业 |
 | `license_holder` | | 持证商 |
-| `specification` | | 规格 |
+| `specification` | | 原始规格 |
 | `std_specification` | | 标准规格 |
 | `auth_num` | ✓ | 批准文号 |
 | `indication` | | 适应症 |
-| `general_name_cn` | | 成分词 |
-| `only_active` | | 仅看有效批文（=1） |
-| `search_mode` | | 检索模式（1相关/2完整/3部分） |
+| `only_active` | | 仅有效文号（=1） |
+| `search_mode` | | 检索模式（1相关/2完整/3部分，默认3） |
 
 This is **not** an exhaustive key list — `*-fields` returns the keys the search UI exposes, and the ES mapping accepts more. Verified example: `brand_name` is absent from this table yet `{"brand_name": "立普妥"}` returns 62 precise rows. A key missing here is therefore not proof it is invalid; see [query-syntax.md](query-syntax.md#but-the-field-lists-are-not-exhaustive-either) for the behavioural test that settles it.
 
@@ -149,35 +148,34 @@ The other 1 is **filter-only** — valid in a `query`, but not in the facet cata
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (4 terms) |
 | Detail | `yaohai-detail` |
 
-> ClinicalTrials.gov records — English names only. `item` works (961 rows for atorvastatin).
+> ClinicalTrials.gov records — English names only. Catalog `search_fields` match the SPA「关键词查询」panel. `item` works (961 rows for atorvastatin). Related-drug key is **`interventions` (plural)**; 申报企业 is **`study_sponsor`**; 登记号 is **`identifier`**. `intervention` / `sponsor` are silently dropped.
 
 ### Search fields
 
 | Key | Verified | Label |
 |---|---|---|
-| `title` | ✓ | 试验标题 |
-| `intervention` | ✓ | 干预措施/药名 |
-| `sponsor` | ✓ | 申办方 |
+| `item` | ✓ | 药名/企业/标题/适应症/登记号 |
+| `title` | ✓ | 试验名称 |
+| `interventions` | | 相关药物 |
+| `study_sponsor` | | 申报企业 |
+| `identifier` | | 登记号 |
 
 ### Facet / filter fields
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* `custom`-route database. `yaohai-facets` v0.4.0 scoped its catalog to `dbs` routes only, so this was never a candidate. The backend aggregation endpoint does exist (`GET /us/ct/eslist/{filter}`) and covers the 5 `terms` fields below — a later MCP release could expose it, but today no MCP tool reaches it.
+`yaohai-facets` fetches terms buckets (`GET /us/ct/eslist/{field}`). `last_updated_date` is defined in the panel file but **not rendered**.
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `ct_status` | | n/a | 招募状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `study_phase` | | n/a | 临床阶段 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `has_result` | | n/a | 研究结果 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `study_type` | | n/a | 研究类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `first_received_date` | | n/a | 登记日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
-| `last_updated_date` | | n/a | 日期Last Updated | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `ct_status` | | ✓ | 招募状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `study_phase` | | ✓ | 临床阶段 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `has_result` | | ✓ | 研究结果 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `study_type` | | ✓ | 研究类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `first_received_date` | | SPA | 登记日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
 
 ### Examples
 
@@ -187,7 +185,13 @@ The other 1 is **filter-only** — valid in a `query`, but not in the facet cata
 {"query": {"item": "atorvastatin"}, "limit": 20}
 ```
 
-**By intervention**
+**By related drug — `interventions`, not `intervention`**
+
+```jsonc
+{"query": {"interventions": "osimertinib"}, "limit": 20}
+```
+
+**✗ WRONG — singular `intervention` / `sponsor` are silently dropped**
 
 ```jsonc
 {"query": {"intervention": "osimertinib"}, "limit": 20}
@@ -205,36 +209,39 @@ The other 1 is **filter-only** — valid in a `query`, but not in the facet cata
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (6 terms) |
 | Detail | `yaohai-detail` |
 
-> Trial registrations from both CTR and ChiCTR (see the row's `source`). `item` works and matches the trial **title and indication**, so a drug mentioned only in the title is found by `item` but not by `drug_name` — `item=阿托伐` gives 355 rows vs `drug_name=奥希替尼` giving 43. Start with `item` for coverage, narrow with `drug_name` for precision.
+> Trial registrations from both CTR and ChiCTR (see the row's `source`). Catalog `search_fields` match the SPA「关键词查询」panel. `item` matches 药名/企业/适应症/登记号 (title and indication too), so a drug mentioned only in the title is found by `item` but not by `drug_name` — `item=阿托伐` gives 355 rows vs `drug_name=奥希替尼` giving 43. Start with `item` for coverage, narrow with `drug_name` for precision. **`sponsor` is not a key** — use `study_sponsor` for 申报企业.
 
 ### Search fields
 
 | Key | Verified | Label |
 |---|---|---|
-| `title` | ✓ | 试验标题 |
-| `drug_name` | ✓ | 药品名称 |
-| `sponsor` | ✓ | 申办方 |
+| `item` | ✓ | 药名/企业/适应症/登记号 |
+| `PI` | | 研究者姓名 |
+| `PI_company` | | 研究者所在单位 |
+| `title` | ✓ | 试验名称 |
+| `drug_name` | ✓ | 相关药物 |
+| `study_sponsor` | | 申报企业 |
+| `indication` | | 适应症 |
+| `register_num` | | 登记号 |
 
 ### Facet / filter fields
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* `custom`-route database. `yaohai-facets` v0.4.0 scoped its catalog to `dbs` routes only, so this was never a candidate. The backend aggregation endpoint does exist (`GET /c/cde/ct/eslist/{filter}`) and covers the 6 `terms` fields below — a later MCP release could expose it, but today no MCP tool reaches it.
+`yaohai-facets` fetches terms buckets (`GET /c/cde/ct/eslist/{field}`).
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `reg_type` | | n/a | 申报类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `ct_status` | | n/a | 招募状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `study_phase` | | n/a | 临床阶段 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `drug_type` | | n/a | 药品类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `study_type` | | n/a | 试验分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `source` | | n/a | 数据来源 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `announce_date` | | n/a | 公示日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `reg_type` | | ✓ | 申报类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `ct_status` | | ✓ | 招募状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `study_phase` | | ✓ | 临床阶段 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `drug_type` | | ✓ | 药品类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `study_type` | | ✓ | 试验分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `source` | | ✓ | 数据来源 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `announce_date` | | SPA | 公示日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
 
 ### Examples
 
@@ -250,7 +257,13 @@ The other 1 is **filter-only** — valid in a `query`, but not in the facet cata
 {"query": {"item": "阿托伐"}, "limit": 20}
 ```
 
-**Trials by sponsor**
+**Trials by sponsor — use `study_sponsor`, not `sponsor`**
+
+```jsonc
+{"query": {"study_sponsor": "阿斯利康"}, "limit": 20}
+```
+
+**✗ WRONG — `sponsor` is not a `ct_cn` key; silently dropped. Use `study_sponsor`.**
 
 ```jsonc
 {"query": {"sponsor": "阿斯利康"}, "limit": 20}
@@ -271,19 +284,19 @@ The other 1 is **filter-only** — valid in a `query`, but not in the facet cata
 | Facets | `reg-cn-facets` |
 | Detail | `reg-cn-detail` |
 
-> CDE registration & review (pipeline). Use the dedicated `reg-cn-*` tools. Default `search_mode` is **1** (related) and `rows_excluded=1` is injected, so 备案 filings are excluded unless you pass `rows_excluded=0`. Because the default differs from `product_cn`, **set `search_mode` explicitly on both** when comparing marketed vs pipeline counts. Items are **flat**; `detail_url` is disabled — use `reg-cn-detail` with `id`.
+> CDE registration & review (pipeline). Use the dedicated `reg-cn-*` tools. Catalog `search_fields` match the SPA「关键词查询」panel: `item`, `drug_name`, `enterprise`, `slh`, `indication`. Default `search_mode` is **1** (相关搜索) and `rows_excluded=1` is injected, so 备案 filings are excluded unless you pass `rows_excluded=0`. Because the default differs from `product_cn`, **set `search_mode` explicitly on both** when comparing marketed vs pipeline counts. Items are **flat**; `detail_url` is disabled — use `reg-cn-detail` with `id`.
 
-### Common search fields (from `*-fields`)
+### Common search fields (from `*-fields` / SPA keyword panel)
 
 | Key | Verified | Meaning |
 |---|---|---|
-| `item` | ✓ | 全文检索（主搜索框） |
-| `drug_name` | ✓ | 药品名称 |
+| `item` | ✓ | 中英药名/企业/适应症/受理号 |
+| `drug_name` | ✓ | 中文药名 |
 | `enterprise` | | 企业名称 |
 | `slh` | | 受理号 |
 | `indication` | | 适应症 |
-| `rows_excluded` | | 排除备案（默认1） |
-| `search_mode` | | 检索模式（1相关/2完整/3部分） |
+| `rows_excluded` | | 排除备案（默认1；传0才含备案） |
+| `search_mode` | | 检索模式（1相关/2完整/3部分，默认1） |
 
 This is **not** an exhaustive key list — `*-fields` returns the keys the search UI exposes, and the ES mapping accepts more. Verified example: `brand_name` is absent from this table yet `{"brand_name": "立普妥"}` returns 62 precise rows. A key missing here is therefore not proof it is invalid; see [query-syntax.md](query-syntax.md#but-the-field-lists-are-not-exhaustive-either) for the behavioural test that settles it.
 
@@ -379,7 +392,7 @@ The other 1 is **filter-only** — valid in a `query`, but not in the facet cata
 |---|---|
 | Search | `yaohai-global-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | SPA 条件筛选 (`dbname`) |
 | Detail | `yaohai-detail` |
 
 > **`term` is the only real keyword key.** The backend maps `term` → `drug_name` internally (`make_global_drugs_search_sql`), and `item` is **not** a recognized key here — sending it is silently dropped and returns all 28,282 molecules.
@@ -407,7 +420,7 @@ Rows are **molecules**, not products. The `*_drug_num` / `*_ct_num` columns are 
 
 ### Facet / filter fields
 
-The backend does support per-field grouping (`/global_drugs/list/{filter}`), but **`yaohai-global-search` exposes no `facets` argument** and `global_search` is not in the `yaohai-facets` catalog, so you cannot facet through MCP. To break results down, either issue several searches with `drug_type` / `rd_status` / `year` filters and compare `total`, or drill into the per-market databases that do have facet tools (`product_cn` via `product-cn-facets`).
+SPA「条件筛选」from `globalSearch/components/ConditionSearchPanel.js` is **`dbname` (数据来源)** — a list passed in by the parent, `autoRequestData: false`. `yaohai-facets` does not wrap this route. `drug_type` / `rd_status` / `year` / `ATC_code` are SQL query keys (table above), not rendered condition panels. Drill into a specific market DB for a real 条件筛选 breakdown.
 
 ### Examples
 

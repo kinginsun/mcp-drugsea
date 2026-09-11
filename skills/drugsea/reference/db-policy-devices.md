@@ -58,7 +58,7 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | SPA 条件筛选 (1 date) |
 | Detail | `yaohai-detail` |
 
 > Domestic Class I device filings (备案, not 注册).
@@ -81,13 +81,11 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* `dbs`-route, so in scope for `yaohai-facets`, and the endpoint exists (`GET /medical_device_beian/eslist/{filter}`) — but every condition field in its frontend panel is a `date` picker. The catalog is `terms`-only (only `terms` fields return aggregated buckets), so extraction found nothing to offer.
+SPA「条件筛选」from the shared DBS `ConditionSearchPanel.js` key `medical_device_beian`. The rendered field is `filing_date` (备案日期, date picker). `yaohai-facets` is terms-only so it will not list this dbname. The panel `url` currently points at `/medical_device_jinkou_beian/eslist/approval_date` (a frontend swap). Send `filing_date` in `query` as a date range.
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `filing_date` | | n/a | 备案日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `filing_date` | | SPA | 备案日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
 
 ---
 
@@ -191,7 +189,7 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | SPA 条件筛选 (1 date) |
 | Detail | `yaohai-detail` |
 
 > Imported Class I device filings.
@@ -215,13 +213,11 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* `dbs`-route, so in scope for `yaohai-facets`, and the endpoint exists (`GET /medical_device_jinkou_beian/eslist/{filter}`) — but every condition field in its frontend panel is a `date` picker. The catalog is `terms`-only (only `terms` fields return aggregated buckets), so extraction found nothing to offer.
+SPA「条件筛选」from the shared DBS `ConditionSearchPanel.js` key `medical_device_jinkou_beian`. The rendered field is `filing_date` (备案日期, date picker). `yaohai-facets` is terms-only so it will not list this dbname. The panel `url` currently points at `/medical_device_beian/eslist/approval_date` (a frontend swap). Send `filing_date` in `query` as a date range.
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `filing_date` | | n/a | 备案日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `filing_date` | | SPA | 备案日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
 
 ---
 

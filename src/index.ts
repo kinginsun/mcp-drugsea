@@ -88,8 +88,8 @@ const DBS_FACET_FIELD_COUNT = DBS_FACET_DBS.reduce(
   (n, db) => n + Object.keys(DBS_FACET_CATALOG[db].fields).length,
   0,
 );
-/** A few well-known dbs, used to hint coverage without listing all 44. */
-const DBS_FACET_EXAMPLES = ["yibao", "jiyao", "jicai", "dpd", "fda_ndc", "uk_emc", "nmpa_gmp"]
+/** A few well-known dbs, used to hint coverage without listing all of them. */
+const DBS_FACET_EXAMPLES = ["zhaobiao", "ct_cn", "yibao", "jiyao", "jicai", "product_us", "uk_emc"]
   .filter((db) => db in DBS_FACET_CATALOG)
   .join(", ");
 
@@ -186,11 +186,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "yaohai-facets",
         description:
-          "Facet distributions (条件筛选) for a dbs database — aggregated value+count buckets for filterable fields. " +
-          `Works for ${DBS_FACET_DB_COUNT} dbs reached via yaohai-search (${DBS_FACET_EXAMPLES}, …). ` +
+          "Facet distributions (条件筛选) — aggregated value+count buckets for filterable fields. " +
+          `Works for ${DBS_FACET_DB_COUNT} databases reached via yaohai-search (${DBS_FACET_EXAMPLES}, …), including dedicated-route pages (zhaobiao, ct_cn, product_us, sales_cn, …). ` +
           `DISCOVERY MODE: omit \`fields\` to list available facet fields (add \`dbname\` for one db, omit it for all ${DBS_FACET_DB_COUNT}). ` +
           "FETCH MODE: pass `fields` (required with `dbname`) to get buckets for those fields. One HTTP request fires per field, so request only the 2–4 you need. " +
           "Pass the same `query` filters you used in yaohai-search to facet within that result set. " +
+          "sales_cn / sales_global return hardcoded SPA lists (count is null). " +
           "Not available for product_cn / reg_cn — use product-cn-facets / reg-cn-facets instead.",
         inputSchema: {
           type: "object",
@@ -198,7 +199,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             dbname: {
               type: "string",
               description:
-                "Database id from yaohai-catalog, e.g. yibao, jiyao, dpd, uk_emc. Required when `fields` is given. Omit to list all facet-capable databases.",
+                "Database id from yaohai-catalog, e.g. zhaobiao, yibao, ct_cn, product_us. Required when `fields` is given. Omit to list all facet-capable databases.",
             },
             query: QUERY_PROP,
             fields: {
@@ -389,9 +390,8 @@ function asQuery(query: QueryObject | undefined): QueryObject {
  *
  * Returned as a normal (non-error) payload so an agent can self-correct in one
  * step instead of having to parse an exception message. Covers the common cases:
- * a dbname that is not in the catalog at all, and one that exists but is not a
- * dbs-route database (product_cn / reg_cn have dedicated facet tools; the other
- * custom/aggs routes expose no condition filters).
+ * a dbname that is not in the catalog at all, and one that exists but has no
+ * terms 条件筛选 (product_cn / reg_cn have dedicated facet tools).
  */
 function facetDbUnknown(dbname: string): Record<string, unknown> {
   const near = DBS_FACET_DBS.filter((db) => db.includes(dbname) || dbname.includes(db)).slice(0, 5);
@@ -400,7 +400,7 @@ function facetDbUnknown(dbname: string): Record<string, unknown> {
     supported: false,
     error: `No facet fields known for dbname "${dbname}".`,
     hint:
-      "Only dbs-route databases support yaohai-facets. " +
+      "Only databases with SPA 条件筛选 terms fields are in yaohai-facets. " +
       "For product_cn use product-cn-facets; for reg_cn use reg-cn-facets. " +
       `Call yaohai-facets with no arguments to list all ${DBS_FACET_DB_COUNT} facet-capable databases.`,
     ...(near.length > 0 ? { did_you_mean: near } : {}),
@@ -458,7 +458,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               dbname: validated.dbname,
               title: entry.title,
               category: entry.category,
-              facet_prefix: entry.prefix,
+              facet_prefix: entry.prefix || null,
+              source: entry.source ?? "http",
               facet_count: Object.keys(entry.fields).length,
               facets: entry.fields,
             });
@@ -468,11 +469,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             total_facet_fields: DBS_FACET_FIELD_COUNT,
             note:
               "Call yaohai-facets with a dbname to list its fields, or pass dbname + fields to fetch buckets. " +
-              "product_cn and reg_cn use product-cn-facets / reg-cn-facets instead.",
+              "product_cn and reg_cn use product-cn-facets / reg-cn-facets instead. " +
+              "sales_cn / sales_global are hardcoded SPA lists (count is null).",
             databases: DBS_FACET_DBS.map((db) => ({
               dbname: db,
               title: DBS_FACET_CATALOG[db].title,
               category: DBS_FACET_CATALOG[db].category,
+              source: DBS_FACET_CATALOG[db].source ?? "http",
               facet_count: Object.keys(DBS_FACET_CATALOG[db].fields).length,
               fields: Object.keys(DBS_FACET_CATALOG[db].fields),
             })),

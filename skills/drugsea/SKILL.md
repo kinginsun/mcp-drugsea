@@ -44,7 +44,7 @@ If you are unsure which database to use, call `yaohai-catalog` (optionally with
 | `reg-cn-facets` | Facet distributions for `reg_cn` | `query?`, **`facets` (required)** |
 | `reg-cn-detail` | One `reg_cn` record | `id` (encrypted) |
 | `yaohai-search` | Any of the other 60 databases | **`dbname`**, `query`, `limit` (≤50), `offset` |
-| `yaohai-facets` | Facet distributions for **44** `dbs`-route databases | `dbname`, `fields?`, `query?` |
+| `yaohai-facets` | Facet distributions for **58** databases (`/in` + dedicated-route 条件筛选) | `dbname`, `fields?`, `query?` |
 | `yaohai-detail` | One record from any database | `dbname`, `id` |
 | ~~`yaohai-smart-search`~~ | **Do not use** — route yourself | — |
 
@@ -57,11 +57,12 @@ have it, and a running MCP server keeps its old tool list until it is reloaded.
 directly. Do not infer the version from anything else — the tool list changed twice, and
 getting it wrong sends you to a call that cannot succeed:
 
-| Version | `yaohai-facets` | `yaohai-smart-search` | Facets for the 44 `dbs`-route databases |
+| Version | `yaohai-facets` | `yaohai-smart-search` | Facets for `/in` + dedicated-route DBs |
 |---|---|---|---|
 | ≤ 0.2.1 | absent | **present** | unavailable |
 | 0.3.0 | absent | absent | unavailable |
-| ≥ 0.4.0 | **present** | absent | available |
+| 0.4.0–0.9.x | **present** | absent | `/in` dbs only (44) |
+| ≥ 0.10.0 | **present** | absent | 58 dbs / 209 terms (dedicated-route + static lists) |
 
 Note `yaohai-smart-search` was removed back in **v0.3.0**, so its presence means the session
 is *older* than 0.3.0 — it is a tell for "quite stale", not a marker of 0.3.0 itself. Either
@@ -79,21 +80,31 @@ As of 2026-09-06 the session connected to this workspace still listed
 Every `yaohai-facets` result quoted in this skill was captured by spawning the local v0.4.0
 build directly.
 
-## Facets: three tools, two behaviours
+## Facets: SPA 条件筛选 vs MCP bucket-fetch
 
-Facets answer "what values does this field take, and how many rows each?" — the right
-way to discover a filter value instead of guessing it.
+Every list page has a「条件筛选」panel. **Source of truth is that page's
+`ConditionSearchPanel.js`** — the `queryKey` on each **rendered** `ConditionExpandView`
+(props defined but omitted from `return` are not SPA facets). `/in/*` databases share
+`frontend/src/routes/more/DBS/components/commonSearch/ConditionSearchPanel.js`. 随心汇
+`drugreg_cn` uses `is_condition: true` in
+`frontend/src/routes/more/aggs/config/data.js`.
+
+Those keys are valid `query` filters. `zhaobiao`, `cn_company`, `ct_cn`, `sales_cn` and
+the other custom-route databases **do have facets**; they are listed in the matching
+`db-*.md`.
+
+MCP **bucket-fetch** (value/count distributions) is a narrower wrapper on top of that:
 
 | Tool | Covers | Fields |
 |---|---|---|
 | `product-cn-facets` | `product_cn` only | 22 (17 multiple, 2 date, 3 range) |
 | `reg-cn-facets` | `reg_cn` only | 22 (17 multiple, 2 date, 3 range) |
-| `yaohai-facets` | **44** `dbs`-route databases | 129, **`terms` only** |
+| `yaohai-facets` | **58** databases (`/in` + dedicated-route 条件筛选) | 209, **`terms` only** (+ hardcoded SPA lists) |
 
 `yaohai-facets` is dual-mode, and the mode depends only on whether `fields` is present:
 
 ```jsonc
-// DISCOVERY — no `fields`. Lists all 44 facet-capable databases and their fields.
+// DISCOVERY — no `fields`. Lists all facet-capable databases and their fields.
 {}
 // DISCOVERY — one database's facetable fields, with filter_type and the URL prefix.
 {"dbname": "yibao"}
@@ -115,10 +126,13 @@ Rules that cost you a failed call if ignored:
 - **`drugsales` is the only database with an auto-injected query**: `groupid=205` is merged
   into every facet call and appears in `query_applied`. Your own `query` value overrides it.
 
-The 17 databases with no facet tool (63 − 44 − the 2 dedicated) are documented
-individually — each `db-*.md` facet section states *why* (custom route out of scope, no
-backend aggregation endpoint, or terms-only extraction), so you can tell "not wired up
-yet" from "impossible".
+`yaohai-facets` fetches buckets for those 58 catalogs. Dedicated-route dbnames
+(`zhaobiao`, `ct_cn`, `product_us`, `sales_cn`, …) are included. `sales_cn` /
+`sales_global` return hardcoded SPA lists (`count` is null). Date pickers
+(器械备案 `filing_date`, …) are still not in the catalog. `product_cn` / `reg_cn`
+keep their dedicated tools.
+
+See [query-syntax.md](reference/query-syntax.md#spa-condition-filters-vs-yaohai-facets).
 
 ## First decision: marketed vs pipeline
 
@@ -211,7 +225,7 @@ Categories and their database counts (from `yaohai-catalog`): 上市情报 15, N
 Before calling a search tool, do this normalization yourself:
 
 1. **Pick the language the database expects.** Chinese databases (`product_cn`,
-   `reg_cn`, `yibao`, `jiyao`, `jicai`) match best on Chinese names. International
+   `reg_cn`, `yibao`, `jiyao`, `jicai`, `zhaobiao`) match best on Chinese names. International
    databases (`product_us`, `fda_ndc`, `dpd`, `uk_emc`) match best on English INNs.
    `global_search` accepts either and maps synonyms internally.
 2. **Strip noise.** Remove dose forms, strengths and pack info from the keyword
@@ -222,7 +236,7 @@ Before calling a search tool, do this normalization yourself:
    switch to `drug_name` / `enterprise` / `auth_num` when you need to narrow.
 4. **Prefer facets over guessed values.** Never invent a facet value such as
    `register_type=化药3类`. Fetch it first — `product-cn-facets` / `reg-cn-facets` for
-   those two databases, `yaohai-facets` for the other 44 — and copy the exact string.
+   those two databases, `yaohai-facets` for the other 58 — and copy the exact string.
 5. **Use ATC letters for therapeutic areas.** Disease questions ("oncology drugs",
    "降糖药") map to an ATC first-level letter, not a keyword. See
    [atc-therapeutic-classes.md](reference/atc-therapeutic-classes.md).
@@ -262,14 +276,14 @@ re-query; each new condition gets its own window.
 ## Standard workflow
 
 1. Route (tables above) → pick `dbname` + tool.
-2. Open the matching `reference/db-*.md` file → confirm field keys, facet keys,
-   `filter_type`, `view_types`, `has_detail`. Its **Facetable** column tells you which
-   keys `yaohai-facets` accepts; when in doubt call discovery mode
-   (`{"dbname": "<db>"}`) for the authoritative list.
+2. Open the matching `reference/db-*.md` file → confirm keyword keys, SPA 条件筛选
+   keys, `filter_type`, `view_types`, `has_detail`. **Facetable** `✓` = MCP can fetch
+   buckets; `SPA list` = hardcoded values (`count` null). For most dbs, discovery mode
+   (`{"dbname": "<db>"}`) lists the `yaohai-facets` fields.
 3. Prepare the query per "How to prepare keywords".
 4. If the question implies a category filter you don't know the exact value of,
-   call the facets tool first and read the real values (`product-cn-facets` /
-   `reg-cn-facets` / `yaohai-facets` — see "Facets: three tools, two behaviours").
+   call `product-cn-facets` / `reg-cn-facets` / `yaohai-facets` (see
+   "Facets: SPA 条件筛选 vs MCP bucket-fetch").
 5. Search. Read `total`.
 6. If `total > 20`, do **not** dump the table — follow
    [result-presentation.md](reference/result-presentation.md).
@@ -288,10 +302,9 @@ re-query; each new condition gets its own window.
   "when was X first approved" use `first_approve_date`.
 - **`ATC_code` facets return only the first-level letter** (e.g. `C`), not full codes
   like `C10AA05`. Use [atc-therapeutic-classes.md](reference/atc-therapeutic-classes.md).
-- **`global_search` has no facet tool.** It is a `custom` route, so `yaohai-facets` does
-  not cover it (the backend endpoint exists but is not wired up). Its `dbname` facet
-  returns an empty list and `rd_status` / `year` are frequently empty. Use it for
-  discovery, then re-query the specific database for filtering.
+- **`global_search` SPA 条件筛选 is `dbname` (数据来源)** — a list supplied by the
+  parent page, not a live agg. `yaohai-facets` does not wrap this route. Use
+  `yaohai-global-search` for discovery, then re-query the specific database.
 - **`product-cn-facets` / `reg-cn-facets` responses always report `filter_type: "multiple"`**
   even for their date and range fields, and date facet values come back as epoch
   milliseconds. There is no `type` key in the payload — `filter_type` is the only one.
@@ -324,6 +337,34 @@ re-query; each new condition gets its own window.
   **entire database** (243,104 rows for `product_cn`) and no error at all. Always
   confirm your field key exists (via `*-fields` or the reference file), and sanity-check
   that `total` dropped after adding a filter.
+- **`zhaobiao` is Elasticsearch (`/es/zhaobiao/list`), not MySQL.** Keyword keys
+  match the SPA panel: `item`, `category`, `drug_name`, `manufacture`, `auth_num`,
+  `dosage_form`, `specification`, `quality_level`, `switch`, `bid_price`. Sending
+  `company` is silently dropped (full ~4.6M rows) — use `manufacture`.
+- **`sales_cn` keyword keys match the SPA panel:** `drug_name` (成分词),
+  `xd_drug_name` (通用名), `company`, `xd_company`, `dosage_form`, `xd_dosage_form`,
+  `specification`, `xd_specification`. `item` and `product` are silently dropped.
+  「精确查询」is `exact: 1`.
+- **`ct_cn` keyword keys match the SPA panel:** `item`, `PI`, `PI_company`, `title`,
+  `drug_name`, `study_sponsor`, `indication`, `register_num`. Sending `sponsor`
+  is silently dropped — use `study_sponsor`.
+- **`ct_global` keyword keys match the SPA panel:** `item`, `title`, `interventions`
+  (plural), `study_sponsor`, `identifier`. `intervention` / `sponsor` are silently
+  dropped. Names are English-only.
+- **`reg_cn` keyword keys match the SPA panel:** `item`, `drug_name`（中文药名）,
+  `enterprise`, `slh`, `indication`. `general_name` is not a keyword box. Default
+  `rows_excluded=1`（排除备案）and `search_mode=1`（相关搜索）.
+- **`cn_company` keyword keys match the SPA panel:** `manufacture`（不是 `company`）,
+  `legal_representative`, `CreditCode`（大小写敏感）, `classification`, `serial_num`,
+  `production_range`. `province` is a facet, not a keyword box.
+- **`shuomingshu` keyword keys match the SPA panel:** `drug_name`, `manufacture`
+  （不是 `company`）, `indication`, `brand_name`, `auth_num`.
+- **`product_cn` keyword keys match the SPA panel:** `item`, `drug_name`（中文药名）,
+  `manufacture`, `license_holder`, `specification`（原始规格）, `std_specification`,
+  `auth_num`, `indication`. `general_name_cn` is not a keyword box. 「仅有效文号」
+  is `only_active=1`; default `search_mode=3`.
+- **`china_new_drugs` keyword keys match the SPA panel:** `drug_name`（中英文药品名称/商品名）,
+  `enterprise`, `slh`, `indication`. No `item` box.
 - **Malformed ranges do the opposite: they hard-error with HTTP 400.**
   `"20-50"` → `number_format_exception`; `"2024/01/01-2024-12-31"` → `parse_exception`.
   Only `"A to B"` is accepted. A 400 means your syntax was wrong, not that the filter

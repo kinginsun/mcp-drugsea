@@ -481,6 +481,16 @@ export async function fetchFacets(opts: {
   const distributions: Record<string, unknown> = {};
   for (const field of opts.fields) {
     const meta = opts.catalog[field];
+    if (Array.isArray(meta.static_values) && meta.static_values.length > 0) {
+      distributions[field] = {
+        success: true,
+        title: meta.title,
+        filter_type: meta.filter_type,
+        source: "static",
+        items: meta.static_values.map((value) => ({ value, count: null })),
+      };
+      continue;
+    }
     const facetQuery: QueryObject = { ...opts.query };
     delete facetQuery[field];
     const result = await yaohaiGet(`${opts.prefix}/${encodeURIComponent(field)}`, facetQuery);

@@ -337,7 +337,7 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (16 terms) |
 | Detail | `yaohai-detail` |
 
 > **Returns aggregates, not rows.** This is the only `aggs`-route database. Items are `{sumBy field(s), count}` groups where `count = count(distinct sumTarget)`, and `total` is the **number of groups**.
@@ -359,6 +359,8 @@ Use this for counting questions ("how many", "which companies"); use `reg_cn` wh
 | `drug_category` | | 药品小类 |
 
 ### Condition / filter fields
+
+SPA「条件筛选」from `more/aggs/config/data.js` (`is_condition: true`). `yaohai-facets` fetches the 16 terms fields via `GET /drugreg_cn/aggs/filter/{field}`. Date conditions stay filter-only. Every search already returns grouped counts via `sumBy` / `sumTarget`.
 
 | Key | Verified | Label | Filter type |
 |---|---|---|---|
@@ -471,7 +473,7 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 
 ## `generic_cn` — 一致性评价产品
 
-**Category** 注册情报 · **Route type** `custom` · **Frontend** `/product/generic_drugs` · **API path** `/generic/cn/list` · **Detail** yes
+**Category** 注册情报 · **Route type** `custom` · **Frontend** `/generic/cn` · **API path** `/generic/cn/list` · **Detail** yes
 
 *Catalog keywords:* 仿制药, 一致性评价, 参比制剂
 
@@ -479,7 +481,7 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (2) |
 | Detail | `yaohai-detail` |
 
 > **Rows are varieties (品种), not individual products** — each carries counts like `yzpj_passed` (已过评), `listing_num` (中国上市), `jicai_num` (国家集采). `has_detail: false`.
@@ -503,15 +505,12 @@ To find a company's consistency-evaluation varieties, use `product_cn` with `is_
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* the backend has **no aggregation endpoint** for this database (`/generic/cn/list` serves list/search only), so the 3 `terms` fields below can filter but cannot be counted. Nothing to expose.
+`yaohai-facets` fetches `drug_type` / `dosage_form` via `GET /generic/cn/list/{field}` (needs drugsea_api deploy of that route). `ATC_code` is defined in the panel file but **not rendered**.
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `dosage_form` | ✓ | n/a | 药品剂型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `drug_type` | | n/a | 药品类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `ATC_code` | | n/a | ATC分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `drug_type` | | ✓ | 药品类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `dosage_form` | ✓ | ✓ | 药品剂型 | multiple — exact string or `string[]`, copy the facet value verbatim |
 
 ### Examples
 
@@ -545,44 +544,41 @@ To find a company's consistency-evaluation varieties, use `product_cn` with `is_
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (11 terms) |
 | Detail | — (no detail) |
 
-> `has_detail: false`. MySQL engine: prefer plain string keywords.
+> `has_detail: false`. MySQL engine: prefer plain string keywords. Catalog `search_fields` match the SPA「关键词查询」panel: `drug_name`, `enterprise`, `slh`, `indication`. There is no `item` box. The list SQL currently filters `drug_name` / `enterprise` / `slh`; `indication` is on the page but the helper does not read it (stored columns are `indication_ctr` / `indication_cde`).
 
 ### Search fields
 
 | Key | Verified | Label |
 |---|---|---|
-| `drug_name` | | 药品名称 |
+| `drug_name` | | 中英文药品名称 /商品名 |
 | `enterprise` | | 企业名称 |
-| `indication` | | 适应症 |
-
-*None of these keys were exercised live — the list is read from the catalog. Confirm a key works by checking that `total` drops (see [query-syntax.md](query-syntax.md#the-real-silent-failure-unknown-field-keys)).*
+| `slh` | | 受理号 |
+| `indication` | | 适应症（页面有框；list SQL 目前未读该键） |
 
 ### Facet / filter fields
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* the backend has **no aggregation endpoint** for this database (`/b/new/drug/cn/list` serves list/search only), so the 11 `terms` fields below can filter but cannot be counted. Nothing to expose.
+`yaohai-facets` fetches terms buckets via `GET /b/drugreg/cn/list/{field}` (reg_cn list aggregations, same as the SPA `url`). Date pickers are filter-only.
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `rd_status` | | n/a | 研发状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `drug_type` | | n/a | 药品类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `dosage_form` | | n/a | 药品剂型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `apply_type` | | n/a | 申请类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `transact_status` | | n/a | 办理状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `conclusion` | | n/a | 审评结论 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `special_list` | | n/a | 特殊品种 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `register_type` | | n/a | 注册分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `slh_types` | | n/a | 申报类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `prov_abs` | | n/a | 来源省份 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `ATC_code` | | n/a | ATC分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `undertake_date` | | n/a | 承办日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
-| `status_start_date` | | n/a | 状态日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `rd_status` | | ✓ | 研发状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `apply_type` | | ✓ | 申请类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `conclusion` | | ✓ | 审评结论 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `transact_status` | | ✓ | 办理状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `register_type` | | ✓ | 注册分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `special_list` | | ✓ | 特殊品种 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `drug_type` | | ✓ | 药品类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `dosage_form` | | ✓ | 药品剂型 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `slh_types` | | ✓ | 申报类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `ATC_code` | | ✓ | ATC分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `prov_abs` | | ✓ | 来源省份 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `undertake_date` | | SPA | 承办日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `status_start_date` | | SPA | 状态日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
 
 ---
 

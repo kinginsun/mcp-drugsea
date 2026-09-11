@@ -39,7 +39,7 @@ cd "$PKG_ROOT"
 PKG_NAME="$(node -p "require('./package.json').name")"
 EXPECTED_TOOLS=13                 # keep in sync with README "should list N tools"
 REMOVED_TOOLS=(yaohai-smart-search)  # regression guard: must never come back
-# yaohai-facets is the single generic facet tool (44 dbs, 129 fields, generated
+# yaohai-facets is the generic facet tool (58 dbs, 209 terms fields, generated
 # from the drugsea frontend condition-filter map). Guarded so a refactor cannot
 # silently drop it while EXPECTED_TOOLS still adds up.
 REQUIRED_TOOLS=(yaohai-facets)

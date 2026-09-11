@@ -1273,5 +1273,717 @@
       "filterType": "terms",
       "showSearchBox": false
     }
+  ],
+  "zhaobiao": [
+    {
+      "title": "中标类别",
+      "queryKey": "bid_type",
+      "urlPath": "/es/zhaobiao/list/bid_type",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "中标省份",
+      "queryKey": "province",
+      "urlPath": "/es/zhaobiao/list/province",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "中标年份",
+      "queryKey": "notice_year",
+      "urlPath": "/es/zhaobiao/list/notice_year",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "执行状态",
+      "queryKey": "execute_status",
+      "urlPath": "/es/zhaobiao/list/execute_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "最小包装单位",
+      "queryKey": "unit",
+      "urlPath": "/es/zhaobiao/list/unit",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "最小制剂单位",
+      "queryKey": "min_unit",
+      "urlPath": "/es/zhaobiao/list/min_unit",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "中标项目",
+      "queryKey": "category",
+      "urlPath": "/es/zhaobiao/list/category",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "cn_company": [
+    {
+      "title": "所在省份",
+      "queryKey": "province",
+      "urlPath": "/enterprise/eslist/province",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "分类码",
+      "queryKey": "std_classification",
+      "urlPath": "/enterprise/eslist/std_classification",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "ct_cn": [
+    {
+      "title": "申报类型",
+      "queryKey": "reg_type",
+      "urlPath": "/c/cde/ct/eslist/reg_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "招募状态",
+      "queryKey": "ct_status",
+      "urlPath": "/c/cde/ct/eslist/ct_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "临床阶段",
+      "queryKey": "study_phase",
+      "urlPath": "/c/cde/ct/eslist/study_phase",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/c/cde/ct/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "试验分类",
+      "queryKey": "study_type",
+      "urlPath": "/c/cde/ct/eslist/study_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "数据来源",
+      "queryKey": "source",
+      "urlPath": "/c/cde/ct/eslist/source",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "ct_global": [
+    {
+      "title": "招募状态",
+      "queryKey": "ct_status",
+      "urlPath": "/us/ct/eslist/ct_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "临床阶段",
+      "queryKey": "study_phase",
+      "urlPath": "/us/ct/eslist/study_phase",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "研究结果",
+      "queryKey": "has_result",
+      "urlPath": "/us/ct/eslist/has_result",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "研究类型",
+      "queryKey": "study_type",
+      "urlPath": "/us/ct/eslist/study_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "shuomingshu": [
+    {
+      "title": "批准国家",
+      "queryKey": "source",
+      "urlPath": "/sms/eslist/source",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "全文附件",
+      "queryKey": "has_sms",
+      "urlPath": "/sms/eslist/has_sms",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "包装图片",
+      "queryKey": "has_package_pics",
+      "urlPath": "/sms/eslist/has_package_pics",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "bio_issue": [
+    {
+      "title": "签发结论",
+      "queryKey": "issue_conclusion",
+      "urlPath": "/c/pqf/eslist/issue_conclusion",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "来源",
+      "queryKey": "source",
+      "urlPath": "/c/pqf/eslist/source",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "product_eu": [
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/ema_drugs/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "审评状态",
+      "queryKey": "status",
+      "urlPath": "/ema_drugs/eslist/status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "上市年份",
+      "queryKey": "year",
+      "urlPath": "/ema_drugs/eslist/year",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "ATC分类",
+      "queryKey": "ATC_code",
+      "urlPath": "/ema_drugs/eslist/ATC_code",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "审评标签",
+      "queryKey": "tags",
+      "urlPath": "/ema_drugs/eslist/tags",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "治疗领域",
+      "queryKey": "therapeutic_area",
+      "urlPath": "/ema_drugs/eslist/therapeutic_area",
+      "filterType": "terms",
+      "showSearchBox": true
+    }
+  ],
+  "product_jp": [
+    {
+      "title": "上市年份",
+      "queryKey": "year",
+      "urlPath": "/jp_drugs/eslist/year",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "产品类别",
+      "queryKey": "category_cn",
+      "urlPath": "/jp_drugs/eslist/category_cn",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品类别",
+      "queryKey": "drug_type",
+      "urlPath": "/jp_drugs/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "是否有效",
+      "queryKey": "is_effect",
+      "urlPath": "/jp_drugs/eslist/is_effect",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "治疗领域",
+      "queryKey": "ATC_code",
+      "urlPath": "/jp_drugs/eslist/ATC_code",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "product_us": [
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/fda_drugs/eslist/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "参比类型",
+      "queryKey": "RLD",
+      "urlPath": "/fda_drugs/eslist/RLD",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "市场状态",
+      "queryKey": "MarketingStatus",
+      "urlPath": "/fda_drugs/eslist/MarketingStatus",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "申请类型",
+      "queryKey": "ApplyType",
+      "urlPath": "/fda_drugs/eslist/ApplyType",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "化学类型",
+      "queryKey": "SubmissionClassification",
+      "urlPath": "/fda_drugs/eslist/SubmissionClassification",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "评审类型",
+      "queryKey": "ReviewPriorityOrphanStatus",
+      "urlPath": "/fda_drugs/eslist/ReviewPriorityOrphanStatus",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "上市年份",
+      "queryKey": "year",
+      "urlPath": "/fda_drugs/eslist/year",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "创仿类别",
+      "queryKey": "InnovatorOrGeneric",
+      "urlPath": "/fda_drugs/eslist/InnovatorOrGeneric",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "china_new_drugs": [
+    {
+      "title": "研发状态",
+      "queryKey": "rd_status",
+      "urlPath": "/b/drugreg/cn/list/rd_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/b/drugreg/cn/list/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/b/drugreg/cn/list/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "申请类型",
+      "queryKey": "apply_type",
+      "urlPath": "/b/drugreg/cn/list/apply_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "办理状态",
+      "queryKey": "transact_status",
+      "urlPath": "/b/drugreg/cn/list/transact_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "审评结论",
+      "queryKey": "conclusion",
+      "urlPath": "/b/drugreg/cn/list/conclusion",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "特殊品种",
+      "queryKey": "special_list",
+      "urlPath": "/b/drugreg/cn/list/special_list",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "注册分类",
+      "queryKey": "register_type",
+      "urlPath": "/b/drugreg/cn/list/register_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "申报类型",
+      "queryKey": "slh_types",
+      "urlPath": "/b/drugreg/cn/list/slh_types",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "来源省份",
+      "queryKey": "prov_abs",
+      "urlPath": "/b/drugreg/cn/list/prov_abs",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "ATC分类",
+      "queryKey": "ATC_code",
+      "urlPath": "/b/drugreg/cn/list/ATC_code",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "generic_cn": [
+    {
+      "title": "药品剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/generic/cn/list/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/generic/cn/list/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "drugreg_cn": [
+    {
+      "title": "是否一致评价",
+      "queryKey": "is_yizhipingjia",
+      "urlPath": "/drugreg_cn/aggs/filter/is_yizhipingjia",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "/drugreg_cn/aggs/filter/drug_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "药品小类",
+      "queryKey": "drug_category",
+      "urlPath": "/drugreg_cn/aggs/filter/drug_category",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "剂型",
+      "queryKey": "dosage_form",
+      "urlPath": "/drugreg_cn/aggs/filter/dosage_form",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "医保剂型",
+      "queryKey": "yibao_dosage",
+      "urlPath": "/drugreg_cn/aggs/filter/yibao_dosage",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "给药途径",
+      "queryKey": "administration_route",
+      "urlPath": "/drugreg_cn/aggs/filter/administration_route",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "创新程度",
+      "queryKey": "innovation_degree",
+      "urlPath": "/drugreg_cn/aggs/filter/innovation_degree",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "申请类型",
+      "queryKey": "apply_type",
+      "urlPath": "/drugreg_cn/aggs/filter/apply_type",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "注册分类",
+      "queryKey": "register_type",
+      "urlPath": "/drugreg_cn/aggs/filter/register_type",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "申报类型",
+      "queryKey": "slh_types",
+      "urlPath": "/drugreg_cn/aggs/filter/slh_types",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "省份简称",
+      "queryKey": "prov_abs",
+      "urlPath": "/drugreg_cn/aggs/filter/prov_abs",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "省份",
+      "queryKey": "province",
+      "urlPath": "/drugreg_cn/aggs/filter/province",
+      "filterType": "terms",
+      "showSearchBox": true
+    },
+    {
+      "title": "办理状态",
+      "queryKey": "transact_status",
+      "urlPath": "/drugreg_cn/aggs/filter/transact_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "审评结论",
+      "queryKey": "conclusion",
+      "urlPath": "/drugreg_cn/aggs/filter/conclusion",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "研发状态",
+      "queryKey": "rd_status",
+      "urlPath": "/drugreg_cn/aggs/filter/rd_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "治疗领域",
+      "queryKey": "ATC_code",
+      "urlPath": "/drugreg_cn/aggs/filter/ATC_code",
+      "filterType": "terms",
+      "showSearchBox": false
+    }
+  ],
+  "sales_cn": [
+    {
+      "title": "销售年份",
+      "queryKey": "years",
+      "urlPath": "",
+      "filterType": "terms",
+      "showSearchBox": false,
+      "staticValues": [
+        "2025",
+        "2024",
+        "2023",
+        "2022",
+        "2021",
+        "2020",
+        "2019",
+        "2018",
+        "2017",
+        "2016",
+        "2015",
+        "2014",
+        "2013",
+        "2012",
+        "2011",
+        "2010",
+        "2009",
+        "2008",
+        "2007",
+        "2006",
+        "2005"
+      ]
+    },
+    {
+      "title": "销售季度",
+      "queryKey": "quarter",
+      "urlPath": "",
+      "filterType": "terms",
+      "showSearchBox": false,
+      "staticValues": [
+        "1季度",
+        "2季度",
+        "3季度",
+        "4季度"
+      ]
+    },
+    {
+      "title": "药品类型",
+      "queryKey": "drug_type",
+      "urlPath": "",
+      "filterType": "terms",
+      "showSearchBox": false,
+      "staticValues": [
+        "化药",
+        "中药",
+        "生物制品",
+        "药用辅料",
+        "其他"
+      ]
+    },
+    {
+      "title": "给药途径",
+      "queryKey": "administration_route",
+      "urlPath": "",
+      "filterType": "terms",
+      "showSearchBox": false,
+      "staticValues": [
+        "口服",
+        "注射",
+        "口颊用药",
+        "舌下",
+        "耳用",
+        "滴耳",
+        "眼用",
+        "滴眼",
+        "吸入",
+        "鼻用",
+        "滴鼻",
+        "直肠",
+        "阴道",
+        "植入",
+        "外用",
+        "冲洗",
+        "诊断剂",
+        "透析",
+        "辅料",
+        "不易直接使用或非用于人体者"
+      ]
+    },
+    {
+      "title": "治疗分类",
+      "queryKey": "ATC_code",
+      "urlPath": "",
+      "filterType": "terms",
+      "showSearchBox": false,
+      "staticValues": [
+        "A:消化道及代谢",
+        "B:血液和造血器官",
+        "C:心血管系统",
+        "D:皮肤病用药",
+        "E:辅料",
+        "G:生殖泌尿系统和性激素",
+        "H:非性激素和胰岛素类的激素",
+        "J:系统用抗感染药",
+        "L:抗肿瘤药和免疫调节药",
+        "M:肌肉-骨骼系统",
+        "N:神经系统",
+        "P:抗寄生虫药、杀虫药和驱虫药",
+        "R:呼吸系统",
+        "S:感觉器官",
+        "V:杂类",
+        "W:原料药",
+        "Z:中药"
+      ]
+    },
+    {
+      "title": "市场区域",
+      "queryKey": "city",
+      "urlPath": "",
+      "filterType": "terms",
+      "showSearchBox": false,
+      "staticValues": [
+        "福建省",
+        "江苏省",
+        "新疆维吾尔自治区",
+        "浙江省",
+        "湖北省",
+        "黑龙江省",
+        "吉林省",
+        "广东省",
+        "河北省",
+        "重庆市",
+        "安徽省",
+        "山西省",
+        "上海市",
+        "河南省",
+        "湖南省",
+        "山东省",
+        "云南省",
+        "陕西省",
+        "内蒙古自治区",
+        "辽宁省",
+        "四川省",
+        "天津市",
+        "北京市",
+        "贵州省"
+      ]
+    }
+  ],
+  "sales_global": [
+    {
+      "title": "年份",
+      "queryKey": "years",
+      "urlPath": "",
+      "filterType": "terms",
+      "showSearchBox": false,
+      "staticValues": [
+        "2019",
+        "2018",
+        "2017",
+        "2016",
+        "2015",
+        "2014",
+        "2013",
+        "2012",
+        "2011",
+        "2010",
+        "2009",
+        "2008",
+        "2007",
+        "2006",
+        "2005"
+      ]
+    },
+    {
+      "title": "市场",
+      "queryKey": "source",
+      "urlPath": "",
+      "filterType": "terms",
+      "showSearchBox": false,
+      "staticValues": [
+        "中国",
+        "全球"
+      ]
+    }
   ]
 }

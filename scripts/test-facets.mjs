@@ -10,6 +10,7 @@ import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { DBS_FACET_CATALOG } from "../dist/dbs-facets.js";
 
 const require = createRequire(import.meta.url);
 const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -33,6 +34,11 @@ function loadDotEnv() {
   }
 }
 
+const EXPECTED_DB_COUNT = Object.keys(DBS_FACET_CATALOG).length;
+const EXPECTED_FIELD_COUNT = Object.values(DBS_FACET_CATALOG).reduce(
+  (n, e) => n + Object.keys(e.fields).length,
+  0,
+);
 const dotenv = loadDotEnv();
 const env = { ...process.env };
 for (const [k, v] of Object.entries(dotenv)) {
@@ -134,9 +140,11 @@ async function main() {
 
   // --- discovery: all databases ---
   const all = toolText(await send("tools/call", { name: "yaohai-facets", arguments: {} }));
-  check("discovery(all) reports 44 dbs", all?.facet_capable_databases === 44, `got ${all?.facet_capable_databases}`);
-  check("discovery(all) reports 129 fields", all?.total_facet_fields === 129, `got ${all?.total_facet_fields}`);
-  check("discovery(all) lists databases array", Array.isArray(all?.databases) && all.databases.length === 44);
+  check("discovery(all) reports catalog db count", all?.facet_capable_databases === EXPECTED_DB_COUNT, `got ${all?.facet_capable_databases} expected ${EXPECTED_DB_COUNT}`);
+  check("discovery(all) reports catalog field count", all?.total_facet_fields === EXPECTED_FIELD_COUNT, `got ${all?.total_facet_fields} expected ${EXPECTED_FIELD_COUNT}`);
+  check("discovery(all) lists databases array", Array.isArray(all?.databases) && all.databases.length === EXPECTED_DB_COUNT);
+  check("discovery includes zhaobiao", all?.databases?.some((d) => d.dbname === "zhaobiao"));
+  check("discovery includes sales_cn as static", all?.databases?.find((d) => d.dbname === "sales_cn")?.source === "static");
   const yibaoRow = all?.databases?.find((d) => d.dbname === "yibao");
   check("yibao present with Chinese title", yibaoRow?.title === "医保目录", yibaoRow?.title);
   check(
@@ -213,6 +221,110 @@ async function main() {
     yzpj?.distributions?.latest_status?.success === true,
     JSON.stringify(yzpj?.distributions?.latest_status)?.slice(0, 140),
   );
+
+  // --- dedicated-route: zhaobiao live GET ---
+  const zb = toolText(
+    await send("tools/call", {
+      name: "yaohai-facets",
+      arguments: { dbname: "zhaobiao", fields: ["bid_type"] },
+    }),
+  );
+  check(
+    "zhaobiao facet succeeds",
+    zb?.distributions?.bid_type?.success === true,
+    JSON.stringify(zb?.distributions?.bid_type)?.slice(0, 140),
+  );
+  check("zhaobiao returns buckets", (zb?.distributions?.bid_type?.items?.length ?? 0) >= 2);
+
+  // --- dedicated-route: product_us live GET ---
+  const us = toolText(
+    await send("tools/call", {
+      name: "yaohai-facets",
+      arguments: { dbname: "product_us", fields: ["ApplyType"] },
+    }),
+  );
+  check(
+    "product_us facet succeeds",
+    us?.distributions?.ApplyType?.success === true,
+    JSON.stringify(us?.distributions?.ApplyType)?.slice(0, 140),
+  );
+
+  // --- static SPA lists: sales_cn (no HTTP) ---
+  const sales = toolText(
+    await send("tools/call", {
+      name: "yaohai-facets",
+      arguments: { dbname: "sales_cn", fields: ["drug_type", "ATC_code"] },
+    }),
+  );
+  check("sales_cn drug_type is static", sales?.distributions?.drug_type?.source === "static");
+  check(
+    "sales_cn drug_type lists 化药",
+    (sales?.distributions?.drug_type?.items ?? []).some((i) => i.value === "化药"),
+  );
+  check(
+    "sales_cn ATC uses letter:中文",
+    (sales?.distributions?.ATC_code?.items ?? []).some((i) => String(i.value).startsWith("C:")),
+  );
+  check("sales_cn static count is null", sales?.distributions?.drug_type?.items?.[0]?.count === null);
+
+  // --- dedicated-route: china_new_drugs (SPA urls are reg_cn list aggs) ---
+  const cnd = toolText(
+    await send("tools/call", {
+      name: "yaohai-facets",
+      arguments: { dbname: "china_new_drugs", fields: ["rd_status"] },
+    }),
+  );
+  check(
+    "china_new_drugs facet succeeds",
+    cnd?.distributions?.rd_status?.success === true,
+    JSON.stringify(cnd?.distributions?.rd_status)?.slice(0, 140),
+  );
+
+  // --- dedicated-route: drugreg_cn aggs filter ---
+  const drc = toolText(
+    await send("tools/call", {
+      name: "yaohai-facets",
+      arguments: { dbname: "drugreg_cn", fields: ["drug_type"] },
+    }),
+  );
+  check(
+    "drugreg_cn facet succeeds",
+    drc?.distributions?.drug_type?.success === true,
+    JSON.stringify(drc?.distributions?.drug_type)?.slice(0, 140),
+  );
+
+  // --- dedicated-route: product_eu ---
+  const eu = toolText(
+    await send("tools/call", {
+      name: "yaohai-facets",
+      arguments: { dbname: "product_eu", fields: ["drug_type"] },
+    }),
+  );
+  check(
+    "product_eu facet succeeds",
+    eu?.distributions?.drug_type?.success === true,
+    JSON.stringify(eu?.distributions?.drug_type)?.slice(0, 140),
+  );
+
+  // --- dedicated-route: generic_cn (needs drugsea_api deploy of GET /generic/cn/list/{field}) ---
+  const gen = toolText(
+    await send("tools/call", {
+      name: "yaohai-facets",
+      arguments: { dbname: "generic_cn", fields: ["drug_type"] },
+    }),
+  );
+  if (gen?.distributions?.drug_type?.success === true) {
+    check(
+      "generic_cn facet succeeds",
+      true,
+      JSON.stringify(gen?.distributions?.drug_type)?.slice(0, 180),
+    );
+  } else {
+    console.log(
+      "[WARN] generic_cn facet not live until drugsea_api GET /generic/cn/list/{filter} is deployed:",
+      JSON.stringify(gen?.distributions?.drug_type)?.slice(0, 180),
+    );
+  }
 
   // --- defaultQuery merge: drugsales needs groupid=205 ---
   const ds = toolText(

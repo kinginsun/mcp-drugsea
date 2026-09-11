@@ -200,7 +200,7 @@ Three tools produce facet distributions, and they do not share a coverage model:
 |---|---|---|
 | `product-cn-facets` | `product_cn` | 22 (17 multiple, 2 date, 3 range) |
 | `reg-cn-facets` | `reg_cn` | 22 (17 multiple, 2 date, 3 range) |
-| `yaohai-facets` | 44 `dbs`-route databases | 129, **`terms` only** |
+| `yaohai-facets` | 58 databases (`/in` + dedicated-route) | 209, **`terms` only** (+ static SPA lists) |
 
 Facets use the same `query` object as the search, with two differences:
 
@@ -240,7 +240,7 @@ Related errors, all of them loud:
 Omit `fields` and the tool describes what it can aggregate instead of aggregating:
 
 ```jsonc
-{}                              // all 44 databases, their titles, categories, field names
+{}                              // all 58 databases, their titles, categories, field names
 {"dbname": "yibao"}             // one database: facet_count, facet_prefix, fields + titles
 ```
 
@@ -252,7 +252,7 @@ reject) and can be a subset in others.
 ### Cost model: one HTTP request per field
 
 `fetchFacets` loops `for (const field of opts.fields)` and issues a separate GET for each.
-Asking for everything means 129 requests. Request the 2–4 dimensions you will actually
+Asking for everything means 209 requests. Request the 2–4 dimensions you will actually
 use — the same discipline the dedicated tools need (5–6 max of their 22).
 
 ### Per-database injected query
@@ -377,29 +377,38 @@ tell you which value grammar to send back as a filter:
 | `range` | `"min to max"` | raw number bucket | ✗ throws |
 | `tree` | hierarchical code (ATC tree); rarely needed via MCP | tree node | ✗ throws |
 
-The per-database `db-*.md` facet tables carry a **Facetable** column marking exactly which
-of that database's keys fall on which side of this line.
+The per-database `db-*.md` facet tables carry a **Facetable** column:
 
-### Databases with no facet tool
+| Value | Meaning |
+|---|---|
+| ✓ | `yaohai-facets` / dedicated `*-facets` can fetch buckets |
+| `SPA list` | hardcoded panel list — `yaohai-facets` returns values with `count: null` |
 
-17 of the 63 have no MCP facet path (63 − 44 − the 2 dedicated). They split into three
-causes, and each `db-*.md` entry states which one applies:
+### SPA condition filters vs yaohai-facets
 
-| Cause | Databases | Aggregation possible at all? |
+Every list page has 条件筛选. **Source of truth is the frontend route's
+`ConditionSearchPanel.js`** (`queryKey` on **rendered** panels). `yaohai-facets`
+fetches **terms** buckets for 58 databases (44 `/in` + dedicated-route pages). Date
+pickers are still not fetchable. `product_cn` / `reg_cn` keep dedicated tools.
+
+| dbname | SPA `queryKey` (rendered terms) | `yaohai-facets` |
 |---|---|---|
-| `custom` route, out of v0.4.0's `dbs`-only scope | `bio_issue`, `cn_company`, `ct_cn`, `ct_global`, `product_eu`, `product_jp`, `product_us`, `shuomingshu`, `zhaobiao` | yes — the backend endpoint exists, MCP just does not call it |
-| `dbs` route but every panel field is a `date` picker | `medical_device_beian`, `medical_device_jinkou_beian` | endpoint exists, nothing terms-shaped to aggregate |
-| no backend aggregation endpoint | `china_new_drugs`, `generic_cn`, `sales_cn`, `sales_global` | no |
-| special routes | `drugreg_cn` (aggs — *is* an aggregation), `global_search` | see below |
-
-`drugreg_cn` needs no facet tool because it returns aggregates for every query — that is
-the whole database. `global_search` has a backend endpoint (`/global_drugs/list/{filter}`)
-but `yaohai-global-search` exposes no facets argument, so break results down with
-`drug_type` / `rd_status` / `year` filters and compare `total`.
-
-For the nine custom-route databases in the first row, approximate a distribution by
-running several searches with different filter values and comparing `total` — and say in
-your answer that the numbers came from searches, not from a facet aggregation.
+| `zhaobiao` | `bid_type`, `province`, `unit`, `min_unit`, `notice_year`, `execute_status`, `category` | ✓ `GET /es/zhaobiao/list/{field}` |
+| `cn_company` | `province`, `std_classification` | ✓ `GET /enterprise/eslist/{field}` (dates not fetchable) |
+| `ct_cn` | `reg_type`, `ct_status`, `study_phase`, `drug_type`, `study_type`, `source` | ✓ `GET /c/cde/ct/eslist/{field}` |
+| `ct_global` | `ct_status`, `study_phase`, `has_result`, `study_type` | ✓ `GET /us/ct/eslist/{field}` |
+| `shuomingshu` | `source`, `has_sms`, `has_package_pics` | ✓ `GET /sms/eslist/{field}` |
+| `bio_issue` | `issue_conclusion`, `source` | ✓ `GET /c/pqf/eslist/{field}` |
+| `product_eu` | `year`, `drug_type`, `status`, `tags`, `ATC_code`, `therapeutic_area` | ✓ `GET /ema_drugs/eslist/{field}` |
+| `product_jp` | `year`, `category_cn`, `drug_type`, `is_effect`, `ATC_code` | ✓ `GET /jp_drugs/eslist/{field}` |
+| `product_us` | `ApplyType`, `year`, `ReviewPriorityOrphanStatus`, `MarketingStatus`, `RLD`, `SubmissionClassification`, `drug_type`, `InnovatorOrGeneric` | ✓ `GET /fda_drugs/eslist/{field}` |
+| `sales_cn` | `years`, `quarter`, `drug_type`, `administration_route`, `ATC_code`, `city` | ✓ static SPA list (`count` null) |
+| `sales_global` | `years`, `source` | ✓ static SPA list (`count` null) |
+| `china_new_drugs` | `rd_status`, `apply_type`, `conclusion`, `transact_status`, `register_type`, `special_list`, `drug_type`, `dosage_form`, `slh_types`, `ATC_code`, `prov_abs` | ✓ `GET /b/drugreg/cn/list/{field}` (reg_cn list aggs) |
+| `generic_cn` | `drug_type`, `dosage_form` | ✓ `GET /generic/cn/list/{field}` (needs drugsea_api deploy) |
+| `drugreg_cn` | 16 terms `is_condition` fields | ✓ `GET /drugreg_cn/aggs/filter/{field}` |
+| `global_search` | `dbname` | not in catalog (parent-supplied list) |
+| `medical_device_beian` / `_jinkou_beian` | `filing_date` | date picker only — not in catalog |
 
 ## Limits and offsets
 
@@ -420,12 +429,16 @@ Total match count is `total` in the MCP response (the raw backend field is `tnum
 Which engine runs depends on `route_type` / `api_path` in the catalog. This matters
 because the same value grammar behaves differently.
 
-### 1. Elasticsearch (`route_type: dbs` or `custom` with `/eslist`)
+### 1. Elasticsearch (`route_type: dbs`, or `custom` with `/eslist` **or** `/es/`)
 
 Full `make_es_condtions()` semantics as described above: `match_phrase` for strings,
 `terms` for arrays, strict regex range parsing, `search_mode` rewriting.
 
-### 2. MySQL (`custom`/`dbs` with `/list`)
+The `/es/` prefix is the tell, not the `/list` suffix. `zhaobiao` is `custom` with
+`api_path` `/es/zhaobiao/list` and runs on Elasticsearch (`view_zhaobiao`). Treating
+any path that merely *ends* in `/list` as MySQL misclassifies it.
+
+### 2. MySQL (`custom`/`dbs` with `/list`, and **not** under `/es/`)
 
 Uses per-database `make_*_search_sql()` helpers. Verified differences:
 
@@ -454,7 +467,7 @@ valid date. A well-formed bare value never errors. So:
 > nothing matches. Silent full-DB return = the field *key* is unknown.
 
 MySQL-engine databases include `yzpj_products`, `generic_cn`, `china_new_drugs`,
-`sales_cn`, `sales_global`, `zhaobiao`, `global_search`.
+`sales_cn`, `sales_global`, `global_search`.
 
 ### 3. Aggregation engine (`route_type: aggs`)
 

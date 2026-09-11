@@ -16,6 +16,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
+import { extractCustomFacets } from "./extract-custom-facets.mjs";
 
 const require = createRequire(import.meta.url);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -130,6 +131,15 @@ for (let i = 0; i < headers.length; i++) {
   if (fields.length) result[dbname] = fields;
 }
 
+const custom = extractCustomFacets();
+for (const [dbname, fields] of Object.entries(custom)) {
+  if (result[dbname]) {
+    console.error(`FAIL: custom facet db ${dbname} already exists in the /in DBS map.`);
+    process.exit(1);
+  }
+  result[dbname] = fields;
+}
+
 // Loss detection: if we parsed fewer entries than the literal contains `url:` lines,
 // some entries were silently skipped. Fail loudly rather than emit a short catalog.
 const urlCount = (objLiteral.match(/url:\s*`\$\{BASE_HOST\}/g) || []).length;
@@ -179,28 +189,39 @@ console.log(`\nWrote ${join(PROJECT_ROOT, "dbs-facets.json")}`);
  * Emit src/dbs-facets.ts — the terms-only facet catalog consumed by the
  * yaohai-facets MCP tool.
  *
- * Generated, not hand-written: 129 fields across 44 dbs is far too many to
- * transcribe without error, and the frontend map is the moving source of truth.
- * Re-run with `--emit-ts` whenever ConditionSearchPanel.js changes.
+ * Generated, not hand-written. Re-run with `--emit-ts` whenever a
+ * ConditionSearchPanel.js (shared /in map or a dedicated page) changes.
  *
  * Scope decisions baked in here:
  *   - terms fields only. date/range/tree are UI pickers, not bucket lists.
  *   - dbs whose only fields are date/range/tree are dropped entirely
  *     (medical_device_beian, medical_device_jinkou_beian).
+ *   - Dedicated-route pages (zhaobiao, ct_cn, product_us, …) come from
+ *     extract-custom-facets.mjs. Hardcoded SPA lists (sales_cn / sales_global)
+ *     are emitted as static_values (no live GET).
  *   - The facet prefix is taken verbatim from the frontend URL rather than derived
- *     from the catalog api_path. They happen to agree for all 44 today, but the
- *     frontend is authoritative and reg_cn already proves prefixes can diverge.
+ *     from the catalog api_path. The frontend is authoritative.
  */
 function emitTypeScript() {
   // db title/category/default_query come from the live catalog so the tool can
   // surface Chinese names and apply required params (drugsales needs groupid).
   let catalogById = new Map();
-  try {
-    const cat = JSON.parse(readFileSync("/tmp/catalog-live.json", "utf8"));
-    for (const d of cat.databases ?? []) catalogById.set(d.id, d);
-  } catch {
+  const catalogPaths = [
+    "/tmp/catalog-live.json",
+    "/Users/randyz/Documents/drugsea/backend/drugsea_api/src/data/yaohai_catalog.json",
+  ];
+  for (const p of catalogPaths) {
+    try {
+      const cat = JSON.parse(readFileSync(p, "utf8"));
+      for (const d of cat.databases ?? []) catalogById.set(d.id, d);
+      if (catalogById.size) break;
+    } catch {
+      /* try next */
+    }
+  }
+  if (!catalogById.size) {
     console.error(
-      "WARN: /tmp/catalog-live.json unavailable — emitting without titles/default_query.",
+      "WARN: catalog JSON unavailable — emitting without titles/default_query.",
     );
   }
 
@@ -215,23 +236,19 @@ function emitTypeScript() {
   const lines = [];
 
   lines.push(`/**`);
-  lines.push(` * Facet (条件筛选) catalog for dbs-route databases — GENERATED FILE.`);
+  lines.push(` * Facet (条件筛选) catalog — GENERATED FILE.`);
   lines.push(` *`);
-  lines.push(` * Source of truth: drugsea frontend`);
-  lines.push(` *   frontend/src/routes/more/DBS/components/commonSearch/ConditionSearchPanel.js`);
-  lines.push(` * which hardcodes the per-db condition filters the web UI renders.`);
+  lines.push(` * Source of truth: drugsea frontend ConditionSearchPanel.js`);
+  lines.push(` *   /in dbs: more/DBS/components/commonSearch/ConditionSearchPanel.js`);
+  lines.push(` *   dedicated pages: scripts/extract-custom-facets.mjs`);
+  lines.push(` *   随心汇 drugreg_cn: more/aggs/config/data.js is_condition`);
   lines.push(` *`);
   lines.push(` * Regenerate (do not hand-edit):`);
   lines.push(` *   node scripts/extract-dbs-facets.mjs --emit-ts`);
   lines.push(` *`);
-  lines.push(` * Scope: \`terms\` fields only — the ones that return aggregated bucket lists`);
-  lines.push(` * (\`content.list[]\` with \`ct\` counts). \`date\`/\`range\`/\`tree\` fields are UI`);
-  lines.push(` * pickers and are excluded, which also drops the two 器械备案 dbs entirely.`);
-  lines.push(` *`);
-  lines.push(` * Note on prefixes: taken verbatim from the frontend URL. They currently equal`);
-  lines.push(` * the catalog \`api_path\` for all ${included.length} dbs, but the frontend is`);
-  lines.push(` * authoritative — \`reg_cn\` already demonstrates that a facet prefix can diverge`);
-  lines.push(` * from api_path.`);
+  lines.push(` * Scope: \`terms\` fields only (bucket lists), plus hardcoded SPA lists as`);
+  lines.push(` * \`static_values\`. \`date\`/\`range\`/\`tree\` pickers are excluded.`);
+  lines.push(` * Prefixes come from the frontend URL. Static-list dbs have prefix "".`);
   lines.push(` */`);
   lines.push(``);
   lines.push(`import type { FacetField } from "./fields.js";`);
@@ -241,12 +258,14 @@ function emitTypeScript() {
   lines.push(`  title: string;`);
   lines.push(`  /** Catalog category, e.g. 市场准入. */`);
   lines.push(`  category: string;`);
-  lines.push(`  /** Facet endpoint prefix; append "/{field}" to build the request path. */`);
+  lines.push(`  /** Facet endpoint prefix; append "/{field}". Empty for static lists. */`);
   lines.push(`  prefix: string;`);
   lines.push(`  /** Aggregatable fields. Keys are what you pass to yaohai-facets. */`);
   lines.push(`  fields: Record<string, FacetField>;`);
   lines.push(`  /** Params the backend requires for this db (merged into every facet query). */`);
   lines.push(`  defaultQuery?: Record<string, string>;`);
+  lines.push(`  /** static = hardcoded SPA list (no live GET). */`);
+  lines.push(`  source?: "http" | "static";`);
   lines.push(`};`);
   lines.push(``);
   lines.push(`export const DBS_FACET_CATALOG: Record<string, DbsFacetEntry> = {`);
@@ -257,15 +276,18 @@ function emitTypeScript() {
     fieldTotal += terms.length;
     const cat = catalogById.get(db);
 
-    // Derive the prefix from the first terms field by stripping "/{queryKey}".
-    const first = terms[0];
-    const prefix = first.urlPath.slice(0, first.urlPath.length - first.queryKey.length - 1);
-    // Every terms field in a db must share the prefix, or fetchFacets cannot work.
-    for (const f of terms) {
-      const p = f.urlPath.slice(0, f.urlPath.length - f.queryKey.length - 1);
-      if (p !== prefix) {
-        console.error(`FAIL: ${db} has mixed facet prefixes (${prefix} vs ${p}).`);
-        process.exit(1);
+    const httpTerms = terms.filter((f) => f.urlPath);
+    const staticOnly = httpTerms.length === 0;
+    let prefix = "";
+    if (httpTerms.length) {
+      const first = httpTerms[0];
+      prefix = first.urlPath.slice(0, first.urlPath.length - first.queryKey.length - 1);
+      for (const f of httpTerms) {
+        const p = f.urlPath.slice(0, f.urlPath.length - f.queryKey.length - 1);
+        if (p !== prefix) {
+          console.error(`FAIL: ${db} has mixed facet prefixes (${prefix} vs ${p}).`);
+          process.exit(1);
+        }
       }
     }
 
@@ -273,12 +295,19 @@ function emitTypeScript() {
     lines.push(`    title: ${q(cat?.title ?? db)},`);
     lines.push(`    category: ${q(cat?.category ?? "")},`);
     lines.push(`    prefix: ${q(prefix)},`);
+    if (staticOnly) {
+      lines.push(`    source: "static",`);
+    }
     if (cat?.default_query && Object.keys(cat.default_query).length > 0) {
       lines.push(`    defaultQuery: ${JSON.stringify(cat.default_query)},`);
     }
     lines.push(`    fields: {`);
     for (const f of terms) {
-      lines.push(`      ${/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(f.queryKey) ? f.queryKey : q(f.queryKey)}: { title: ${q(f.title)}, filter_type: "multiple" },`);
+      const key = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(f.queryKey) ? f.queryKey : q(f.queryKey);
+      const extra = Array.isArray(f.staticValues)
+        ? `, static_values: ${JSON.stringify(f.staticValues)}`
+        : "";
+      lines.push(`      ${key}: { title: ${q(f.title)}, filter_type: "multiple"${extra} },`);
     }
     lines.push(`    },`);
     lines.push(`  },`);

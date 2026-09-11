@@ -378,35 +378,38 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (6, static lists) |
 | Detail | — (no detail) |
 
-> **Variety-level, not transaction-level**, and `has_detail: false`. Only three keys work: `drug_name`, `company`, `product`. **`item` is not a key here** — sending it silently returns all 8,835,947 rows. ATC facet renders as `letter:中文`; send the bare letter.
+> **Variety-level, not transaction-level**, and `has_detail: false`. Catalog `search_fields` match the SPA「关键词查询」panel. **`item` and `product` are not keys** — they are silently dropped (full-DB `total`). ATC facet renders as `letter:中文`; send the bare letter. Checkbox「精确查询」is `exact: 1` (not a keyword box).
 
 ### Search fields
 
 | Key | Verified | Label |
 |---|---|---|
-| `drug_name` | ✓ | 药品名称 |
+| `drug_name` | ✓ | 成分词(不含酸根、盐和剂型) |
+| `xd_drug_name` | | 通用名(含酸根、盐和剂型) |
 | `company` | ✓ | 企业名称 |
-| `product` | ✓ | 品种名称 |
+| `xd_company` | | 持证商(XD) |
+| `dosage_form` | | 剂型 |
+| `xd_dosage_form` | | 剂型(XD) |
+| `specification` | | 规格 |
+| `xd_specification` | | 规格(XD) |
 
 ### Facet / filter fields
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* the backend has **no aggregation endpoint** for this database (`/c/drug/hosp` serves list/search only), so the 6 `terms` fields below can filter but cannot be counted. Nothing to expose.
+`yaohai-facets` returns the hardcoded SPA lists (`count` is null). `ATC_code` values are `letter:中文`.
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `years` | | n/a | 销售年份 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `quarter` | | n/a | 销售季度 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `drug_type` | | n/a | 药品类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `administration_route` | | n/a | 给药途径 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `ATC_code` | | n/a | 治疗分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `city` | | n/a | 市场区域 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `years` | | SPA list | 销售年份 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `quarter` | | SPA list | 销售季度 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `drug_type` | | SPA list | 药品类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `administration_route` | | SPA list | 给药途径 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `ATC_code` | | SPA list | 治疗分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `city` | | SPA list | 市场区域 | multiple — exact string or `string[]`, copy the facet value verbatim |
 
 ### Examples
 
@@ -422,7 +425,13 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 {"query": {"company": "齐鲁"}, "limit": 20}
 ```
 
-**✗ WRONG — `item` is not a `sales_cn` key; silently returns all 8,835,947 rows**
+**Exact match (SPA「精确查询」)**
+
+```jsonc
+{"query": {"drug_name": "阿托伐他汀", "exact": 1}, "limit": 20}
+```
+
+**✗ WRONG — `item` / `product` are not `sales_cn` keys; silently returns all 8,835,947 rows**
 
 ```jsonc
 {"query": {"item": "阿托伐他汀"}, "limit": 20}
@@ -440,38 +449,65 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (7) |
 | Detail | `yaohai-detail` |
 
-> Tender/award (挂网价) data. MySQL engine — prefer plain string keywords.
+> Tender/award (挂网价). **Elasticsearch** on `view_zhaobiao` via `/es/zhaobiao/list` — same `make_es_condtions()` grammar as other ES databases. Do not treat the `/list` suffix as MySQL; the leftover MySQL path `/zhaobiao/list` is not what MCP or the SPA use.
+>
+> Catalog `search_fields` match the SPA「关键词查询」panel: `item`, `category`, `drug_name`, `manufacture`, `auth_num`, `dosage_form`, `specification`, `quality_level`, `switch`, `bid_price`. **`company` is not a stored field** — it is silently dropped (full-DB `total`). Use `manufacture` for 企业名称. `province` is a facet filter, not a keyword box.
+
+Unfiltered size (2026-09-11): **4,598,529**.
 
 ### Search fields
 
 | Key | Verified | Label |
 |---|---|---|
-| `drug_name` | | 药品名称 |
-| `company` | | 企业名称 |
-| `province` | | 省份 |
+| `item` | ✓ | 全文搜索；`阿托伐他汀` → 9,336（与 `drug_name` 同量） |
+| `category` | ✓ | 招标项目名称（`河北` → 102,236） |
+| `drug_name` | ✓ | 药品名称 |
+| `manufacture` | ✓ | 企业名称（`齐鲁` → 38,832） |
+| `auth_num` | ✓ | 批准文号（`国药准字H20051408` → 142） |
+| `dosage_form` | | 剂型 |
+| `specification` | | 规格 |
+| `quality_level` | | 质量层次 |
+| `switch` | | 转换比 |
+| `bid_price` | | 中标价 |
 
-*None of these keys were exercised live — the list is read from the catalog. Confirm a key works by checking that `total` drops (see [query-syntax.md](query-syntax.md#the-real-silent-failure-unknown-field-keys)).*
+### Examples
+
+**By ingredient (use `item` or `drug_name`)**
+
+```jsonc
+{"query": {"item": "阿托伐他汀"}, "limit": 20}
+```
+
+**By manufacturer — not `company`**
+
+```jsonc
+{"query": {"manufacture": "齐鲁"}, "limit": 20}
+```
+
+**✗ WRONG — catalog key `company` is silently dropped; `total` stays 4,598,529**
+
+```jsonc
+{"query": {"company": "齐鲁"}, "limit": 20}
+```
 
 ### Facet / filter fields
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* `custom`-route database. `yaohai-facets` v0.4.0 scoped its catalog to `dbs` routes only, so this was never a candidate. The backend aggregation endpoint does exist (`GET /es/zhaobiao/list/{filter}`) and covers the 7 `terms` fields below — a later MCP release could expose it, but today no MCP tool reaches it.
+`yaohai-facets` fetches terms buckets (`GET /es/zhaobiao/list/{field}`).
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `bid_type` | | n/a | 中标类别 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `province` | | n/a | 中标省份 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `notice_year` | | n/a | 中标年份 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `execute_status` | | n/a | 执行状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `unit` | | n/a | 最小包装单位 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `min_unit` | | n/a | 最小制剂单位 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `category` | | n/a | 中标项目 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `bid_type` | ✓ | ✓ | 中标类别 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `province` | ✓ | ✓ | 中标省份 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `notice_year` | ✓ | ✓ | 中标年份 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `execute_status` | | ✓ | 执行状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `unit` | | ✓ | 最小包装单位 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `min_unit` | | ✓ | 最小制剂单位 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `category` | | ✓ | 中标项目 | multiple — exact string or `string[]`, copy the facet value verbatim |
 
 ---
 
@@ -557,7 +593,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (2, static lists) |
 | Detail | — (no detail) |
 
 > `has_detail: false` — the list row is all you get.
@@ -575,14 +611,12 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* the backend has **no aggregation endpoint** for this database (`/drug/annual_report` serves list/search only), so the 2 `terms` fields below can filter but cannot be counted. Nothing to expose.
+`yaohai-facets` returns the hardcoded SPA lists (`count` is null): `source` is 中国 / 全球; `years` is 2005–2019.
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `source` | | n/a | 市场 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `years` | | n/a | 年份 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `source` | | SPA list | 市场 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `years` | | SPA list | 年份 | multiple — exact string or `string[]`, copy the facet value verbatim |
 
 ---
 
@@ -596,7 +630,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | — (no facet tool) |
+| Facets | `yaohai-facets` (2 terms) |
 | Detail | `yaohai-detail` |
 
 > Biologics batch release (批签发), the vaccine/blood-product volume signal.
@@ -615,14 +649,12 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
-**No MCP facet tool covers this database.** The fields below still work as `query` filters — the web UI renders them and the backend honours them — but you cannot ask MCP for the value distributions. To approximate a breakdown, run several searches with different filter values and compare `total`.
-
-*Why:* `custom`-route database. `yaohai-facets` v0.4.0 scoped its catalog to `dbs` routes only, so this was never a candidate. The backend aggregation endpoint does exist (`GET /c/pqf/eslist/{filter}`) and covers the 2 `terms` fields below — a later MCP release could expose it, but today no MCP tool reaches it.
+`yaohai-facets` fetches terms buckets (`GET /c/pqf/eslist/{field}`).
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `issue_date` | | n/a | 签发时间 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
-| `issue_conclusion` | | n/a | 签发结论 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `source` | | n/a | 来源 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `issue_date` | | SPA | 签发时间 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `issue_conclusion` | | ✓ | 签发结论 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `source` | | ✓ | 来源 | multiple — exact string or `string[]`, copy the facet value verbatim |
 
 ---

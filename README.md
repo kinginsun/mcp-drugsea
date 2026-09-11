@@ -180,7 +180,7 @@ xlsx export is not implemented in this MCP (v1 returns JSON samples only).
 | `yaohai-catalog` | `category?`, `q?` | List databases |
 | `yaohai-search` | `dbname`, `query?`, `limit?`, `offset?` | Default limit 10, max 50; ≤ 1000 rows per query condition (offset+limit window cap) |
 | `yaohai-detail` | `dbname`, `id` | Skip DBs with `has_detail: false` |
-| `yaohai-facets` | `dbname?`, `query?`, `fields?` | Facets for `dbs`-route DBs. Omit `fields` → discover facet-capable DBs/fields; pass `fields` → fetch buckets |
+| `yaohai-facets` | `dbname?`, `query?`, `fields?` | Facets for 58 databases (44 `/in` + dedicated-route pages). Omit `fields` → discover; pass `fields` → fetch buckets. `sales_cn` / `sales_global` are hardcoded SPA lists. |
 | `yaohai-global-search` | `q?`, `query?`, `limit?`, `offset?` | `q` fills `query.term` |
 
 When the target database is unclear, use `yaohai-catalog` (filter by `category` / `q`) to pick a `dbname`, then `yaohai-search`; or use `yaohai-global-search` for a cross-database panorama query.
@@ -191,10 +191,10 @@ When the target database is unclear, use `yaohai-catalog` (filter by `category` 
 > reach deeper slices, narrow the filters (date / province / ATC / enterprise)
 > and query again — each *new* condition gets its own 1000-row window.
 
-`yaohai-facets` mirrors the ConditionSearch facet filters of the website for the `dbs`-route databases (医保 `yibao`, 基药 `jiyao`, 集采 `jicai`, sales `drugsales`, …). Two modes:
+`yaohai-facets` mirrors the ConditionSearch facet filters of the website (医保 `yibao`, 招标 `zhaobiao`, 临床 `ct_cn`, 美国上市 `product_us`, …). Two modes:
 
-- **Discovery** (no `fields`): omit `dbname` to list all 44 facet-capable databases, or pass `dbname` to list its facet-able fields (with `filter_type`).
-- **Fetch** (`dbname` + `fields`): returns aggregation buckets (`value`/`count`) for the named terms fields, optionally narrowed by `query`. Only `terms`-type fields are exposed (44 DBs, 129 fields); date/range/tree filters are not faceted here.
+- **Discovery** (no `fields`): omit `dbname` to list all facet-capable databases, or pass `dbname` to list its facet-able fields (with `filter_type`).
+- **Fetch** (`dbname` + `fields`): returns aggregation buckets (`value`/`count`) for the named terms fields, optionally narrowed by `query`. Covers `/in` dbs plus dedicated-route pages whose SPA `ConditionSearchPanel` has a live `GET …/{field}` (zhaobiao, ct_cn, product_us, …). `sales_cn` / `sales_global` return hardcoded SPA lists (`count` is null). Date/range/tree pickers are not faceted here. `product_cn` / `reg_cn` still use their dedicated tools.
 
 For the two dedicated ES routes use `product-cn-facets` / `reg-cn-facets` instead — `yaohai-facets` returns an actionable hint if you pass `product_cn` / `reg_cn`.
 

@@ -1,6 +1,8 @@
 export type FacetField = {
   title: string;
   filter_type: "multiple" | "date" | "range";
+  /** Hardcoded SPA list. When present, yaohai-facets returns these without a GET. */
+  static_values?: string[];
 };
 
 export const PRODUCT_CN_COMMON_FIELDS = [

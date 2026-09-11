@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>多替诺雷片 · 化药4类立项调研（数据截止 2026-09-11）</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
+<style>
+  :root {
+    --ink: #1a2332;
+    --muted: #5c6b7a;
+    --line: #e4e9ef;
+    --bg: #f4f6f8;
+    --card: #fff;
+    --p1: #1f7a4d;
+    --p2: #c0392b;
+    --p3: #b7791f;
+    --accent: #1b4f8a;
+    --warn: #8a4b12;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 15px/1.65 "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 22px 80px; }
+  header.hero {
+    background: linear-gradient(135deg, #132338 0%, #1b4f8a 70%);
+    color: #fff;
+    padding: 36px 40px 32px;
+    border-radius: 14px;
+    margin-bottom: 22px;
+  }
+  header.hero h1 { margin: 0 0 8px; font-size: 28px; font-weight: 650; letter-spacing: .02em; }
+  header.hero .sub { opacity: .88; font-size: 14px; }
+  header.hero .meta { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    background: rgba(255,255,255,.14);
+  }
+  .verdict {
+    margin-top: 22px;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .verdict strong { font-size: 18px; }
+  .grid { display: grid; gap: 16px; }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px 16px;
+  }
+  h2 { font-size: 20px; margin: 34px 0 12px; }
+  h3 { font-size: 16px; margin: 0 0 10px; }
+  p, li { color: var(--ink); }
+  .muted { color: var(--muted); }
+  .kpi { text-align: center; }
+  .kpi .num { font-size: 42px; font-weight: 700; line-height: 1; }
+  .kpi .lbl { margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .note {
+    font-size: 13px;
+    color: var(--muted);
+    background: #f8fafc;
+    border-left: 3px solid #c5d4e3;
+    padding: 8px 12px;
+    margin: 10px 0 0;
+  }
+  .warn {
+    border-left-color: #d4a017;
+    background: #fffbeb;
+    color: var(--warn);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 8px; text-align: left; vertical-align: top; }
+  th { background: #f7f9fb; font-weight: 600; color: #334155; }
+  .chart { width: 100%; height: 340px; }
+  .chart-sm { height: 280px; }
+  .chart-lg { height: 420px; }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 4px; background: #eef3f8; color: #334; margin-right: 4px; }
+  .tag.bad { background: #fde8e6; color: #9b1c1c; }
+  .tag.ok { background: #e6f6ec; color: #166534; }
+  .tag.mid { background: #fef3c7; color: #92400e; }
+  footer { margin-top: 40px; font-size: 12px; color: var(--muted); }
+  @media (max-width: 900px) {
+    .g3, .g2 { grid-template-columns: 1fr; }
+    header.hero { padding: 24px; }
+    .chart { height: 280px; }
+  }
+  @media print {
+    body { background: #fff; }
+    .card, header.hero { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="sub">立项调研 · 化药 4 类口服常释片 · 数据截止 2026-09-11 · 药海 DrugSea</div>
+  <h1>多替诺雷片（优乐思 / URECE）</h1>
+  <div class="sub">原研：富士药品 FUJI YAKUHIN · 中国进口上市 2024-12-06 · URAT1 抑制剂 · 痛风伴高尿酸血症</div>
+  <div class="meta">
+    <span class="pill">P1 可获批 87（高）</span>
+    <span class="pill">P2 现在可合法上市 18（低）</span>
+    <span class="pill">P2 2030-09 后 76（中高）</span>
+    <span class="pill">P3 值得做 47（中低）</span>
+  </div>
+  <div class="verdict">
+    <strong>结论：跟踪 / 卡位立项，不按「马上仿制上市」投产。</strong>
+    <div style="margin-top:8px;opacity:.92">
+      化药 4 类 + BE 路径清楚，国内原研参比已定，技术上能做完。真正卡住商业化的是化合物专利 <b>ZL201080042866.9，有效至 2030-09-28</b>：行业绝大多数走 3 类声明，承诺到期前不上市。晶型专利多家按「已被宣告无效」做 2 类，近端阻挡弱。国内医院销售库尚无样本；日本原研 2024 全终端约 <b>2783 万美元</b>（同比约 +28%）。建议现在只做小试 / BE / 原料卡位，合法上市锚点放在 2030 年 9 月化合物到期之后。
+    </div>
+  </div>
+</header>
+
+<section class="grid g3">
+  <div class="card kpi">
+    <div class="num" style="color:var(--p1)">87</div>
+    <div class="lbl">P1 可获批<br/>法规×0.5 + CMC×0.5 · 通过线 ≥70</div>
+  </div>
+  <div class="card kpi">
+    <div class="num" style="color:var(--p2)">18</div>
+    <div class="lbl">P2 现在可合法上市<br/>专利维度 · 化合物未到期默认低</div>
+  </div>
+  <div class="card kpi">
+    <div class="num" style="color:var(--p3)">47</div>
+    <div class="lbl">P3 值得做<br/>竞争×0.4 + 市场×0.5 + 时间×0.1</div>
+  </div>
+</section>
+
+<div class="grid g2" style="margin-top:16px">
+  <div class="card">
+    <h3>三个概率仪表</h3>
+    <div id="gauges" class="chart"></div>
+    <p class="note">立项综合 = 0.25·P1 + 0.40·P2 + 0.35·P3。现在综合 <b>45</b>（暂缓商业化）；2030 到期后情景综合 <b>69</b>（卡位立项边缘）。省级挂网已落地，不改变 P2，也不把综合打进「现在投产」。</p>
+  </div>
+  <div class="card">
+    <h3>六维雷达（现在 vs 2030 后上市）</h3>
+    <div id="radar" class="chart"></div>
+  </div>
+</div>
+
+<h2>1. 品种档案</h2>
+<div class="card">
+  <table>
+    <tr><th style="width:22%">字段</th><th>事实</th><th>来源</th></tr>
+    <tr><td>通用名 / INN</td><td>多替诺雷 / Dotinurad</td><td>product_cn</td></tr>
+    <tr><td>商品名</td><td>优乐思 / URECE / You Le Si；日本 ユリス</td><td>product_cn / product_jp</td></tr>
+    <tr><td>持证 / 生产</td><td>FUJI YAKUHIN CO., LTD. · Toyama Plant（日本）</td><td>product_cn</td></tr>
+    <tr><td>批准文号</td><td>国药准字 HJ20240163（1 mg）、HJ20240164（2 mg）</td><td>product_cn 有效批文 2 条</td></tr>
+    <tr><td>中国首次上市</td><td>2024-12-06 · 化药 5.1 原研进口</td><td>product_cn</td></tr>
+    <tr><td>剂型 / 给药</td><td>口服常释片 · 处方药 · 非基药</td><td>product_cn</td></tr>
+    <tr><td>适应症</td><td>痛风伴高尿酸血症</td><td>product_cn / yibao 限用</td></tr>
+    <tr><td>靶点</td><td>URAT1 / SLC22A12（UniProt Q96S37）。targets 库未单列 Dotinurad，同靶点有丙磺舒、lesinurad 等</td><td>targets</td></tr>
+    <tr><td>医保</td><td><span class="tag ok">2025 版谈判药 · 国乙 · 保险编号 313</span> 执行期 2026-01-01 至 2027-12-31。product_cn 仍标「非医保」，以 yibao / nhsa_code 为准</td><td>yibao · nhsa_code</td></tr>
+    <tr><td>医保代码</td><td>TX313；2 mg×14 片 XM04ABD376A001010185383；2 mg×28 片 …010285383。限痛风伴高尿酸血症</td><td>nhsa_code</td></tr>
+    <tr><td>目录集 / 橙皮书</td><td>product_cn is_orange_book=否；cn_orange_book 检索 total=0</td><td>不可得/未收录</td></tr>
+    <tr><td>说明书</td><td>shuomingshu total=0</td><td>不可得</td></tr>
+    <tr><td>CDE 原研</td><td>JXHS2400007（1 mg）、JXHS2400008（2 mg）；2021-03-20 卫材中国+富士临床 JXHL2100094/95，2021-05-25 批准临床</td><td>reg_cn</td></tr>
+  </table>
+</div>
+
+<h2>2. 参比与 4 类路径（支撑 P1）</h2>
+<div class="grid g2">
+  <div class="card">
+    <h3>中国参比制剂（cn_reference_drugs = 5）</h3>
+    <table>
+      <tr><th>批次</th><th>编号</th><th>规格</th><th>类型</th></tr>
+      <tr><td>第 93 批 2025-07-08</td><td>93-33 / 93-34</td><td>1 mg / 2 mg</td><td>国内上市原研进口 · 优乐思</td></tr>
+      <tr><td>第 81 批 2024-06-17</td><td>81-4 / 81-5 / 81-6</td><td>0.5 / 1 / 2 mg</td><td>日本未进口 · URECE</td></tr>
+    </table>
+    <p class="note">国内可仿规格锚点是 <b>1 mg、2 mg</b>。0.5 mg 仅有日本未进口参比，走 4 类需另论证。</p>
+  </div>
+  <div class="card">
+    <h3>一致性评价看板（generic_cn / yzpj_products）</h3>
+    <table>
+      <tr><th>指标</th><th>值</th></tr>
+      <tr><td>中国上市</td><td>1（原研进口）</td></tr>
+      <tr><td>已过评</td><td>0</td></tr>
+      <tr><td>仿制药申请</td><td>19</td></tr>
+      <tr><td>一致性评价补充申请</td><td>38（yzpj 口径审评中 38）</td></tr>
+      <tr><td>BE 登记</td><td>51</td></tr>
+      <tr><td>参比制剂数</td><td>5</td></tr>
+      <tr><td>国家集采</td><td>0</td></tr>
+    </table>
+  </div>
+</div>
+
+<h2>3. 申报竞争</h2>
+<div class="card">
+  <p>reg_cn（drug_name=多替诺雷，search_mode=1）：化药 4 类 <b>38</b> 条 + 5.1 <b>2</b> 条；在研 39 / 已完结 10 / 已上市 2；在审评审批中 39。list_by_enterprise total=53（含进口一次性、对照品）。apply_listing_num 现为 20。drugreg_cn 本次 total=0，按不可得处理。</p>
+  <div id="compBar" class="chart"></div>
+  <p class="note">天地恒一 <b>CYHS2503112</b>（2025-08-25）带潜在首仿标记；另有 CYHS2504481（2025-12-30）非首仿。规格覆盖 0.5 / 1 / 2 mg。BE 申办方比 4 类企业更多（大连美创、南昌弘益、哈尔滨华瑞、浙江善渊、江苏海岸、普洛康裕等），赛道比 ANDA 名单更卷。</p>
+</div>
+<div class="card" style="margin-top:16px">
+  <h3>化药 4 类申请企业（约 19 家，与 generic_cn 一致）</h3>
+  <table>
+    <tr><th>企业</th><th>备注</th></tr>
+    <tr><td>湖南天地恒一制药</td><td><span class="tag mid">潜在首仿</span> 化合物 4.1 类、晶型 4.2 类</td></tr>
+    <tr><td>齐鲁制药</td><td>大厂跟进</td></tr>
+    <tr><td>杭州中美华东制药</td><td>华东系；原料侧有华东医药（西安）博华 DMF</td></tr>
+    <tr><td>四川国为制药</td><td>制剂 + 原料均登记</td></tr>
+    <tr><td>江苏德源药业、山东朗诺</td><td>制剂 + 原料均登记</td></tr>
+    <tr><td>江西施美、九华华源+华益安徽、浙江益汉、湖南千金协力、北京华素、江西泰吉立、山东诺明康+诺禾康、江苏谦仁、辽宁鑫善源、桂林南药、杭州和康、广州大光、山西泽辰+鑫煜</td><td>其余 4 类申请人</td></tr>
+  </table>
+</div>
+
+<h2>4. 专利与专利链接（P2 核心）</h2>
+<div class="card">
+  <p>zldj 公示日 2024-12-25，对应 HJ20240163 / HJ20240164。zlsm total=38。nmpa_reg_patent 本次 total=0。</p>
+  <table>
+    <tr><th>专利</th><th>类型</th><th>权利人</th><th>授权</th><th>有效期</th><th>行业声明口径</th></tr>
+    <tr>
+      <td>ZL201080042866.9<br/>新型苯酚衍生物</td>
+      <td>化合物 / 组合物 / 用途</td>
+      <td>富士药品；被许可人卫材株式会社、卫材（中国）</td>
+      <td>2015-03-25</td>
+      <td><b>2030-09-28</b></td>
+      <td><span class="tag bad">绝大多数 3 类</span>承诺到期前不上市；华素写明「有效期届满前暂不上市」。天地恒一例外走 <b>4.1 类</b>（应被宣告无效）</td>
+    </tr>
+    <tr>
+      <td>ZL201880027057.7<br/>晶型及其盐</td>
+      <td>组合物（晶型）</td>
+      <td>富士药品</td>
+      <td>2023-03-10</td>
+      <td>公示到期 2038-04-26</td>
+      <td><span class="tag ok">大量 2 类</span>理由「该专利已被宣告无效」或「不属于可登记类型」，引用（2023）最高法知民终 7 号。天地恒一走 4.2 类（不应登记）</td>
+    </tr>
+  </table>
+  <p class="note warn">P2 判断：晶型对上市阻挡弱，不单独否决 2030 后仿制。化合物专利在 2030-09-28 前是硬约束，除非 4.1 无效请求成功。本报告不构成法律意见；无效声明未逐件核对裁判文书全文。</p>
+  <div id="patentGantt" class="chart"></div>
+</div>
+
+<h2>5. 技术、原料与 BE（支撑 P1）</h2>
+<div class="grid g2">
+  <div class="card">
+    <h3>原料药 DMF（cde_yfb_registration = 14，全部状态 I）</h3>
+    <p>尚未与制剂共同审评。登记年 2025–2026：山东艾格林、珠海海瑞德、华东医药（西安）博华、华北制药华胜、四川国为、湖北天舒、渭南瑞联、吉林博大、江苏德源、山东济坤、上海迪赛诺化学、山东朗诺、天地恒一、广东先强。</p>
+    <p class="note">fda_dmf / japan_dmf 检索 Dotinurad total=0。原料供给已铺开，但全部 I 档，对 BE/关联审评仍有节奏风险，故 CMC 维打 82 而非 90+。</p>
+  </div>
+  <div class="card">
+    <h3>BE / 临床</h3>
+    <p>ct_cn total=<b>53</b>，几乎全是空腹+餐后双交叉 BE 备案；状态含未招募 / 招募完成 / 已完成。generic_cn BE=51。剂型为常释片，BE 可做性高。</p>
+    <p>ChiCTR：青岛大学附属医院混合型痛风，非布司他 vs 多替诺雷 RCT（对照研究，非 BE）。</p>
+    <p>说明书库空，BCS / 溶出细节不可得，不编造。</p>
+  </div>
+</div>
+
+<h2>6. 临床地位与同类替代</h2>
+<div class="card">
+  <p>机制：选择性 URAT1 抑制剂，与苯溴马隆同类促尿酸排泄，与非布司他 / 别嘌醇（XO 抑制）机制不同。原研中国 III 期对照非布司他（NCT05007392，卫材中国，已完成）。美国 Crystalys 正在做 vs 别嘌醇的 Ph2/Ph3（NCT07089875、NCT07089888、NCT07535034），<b>美国尚未橙皮书上市</b>（product_us total=0）。欧盟 EMA product_eu total=0。</p>
+  <div id="peerBar" class="chart"></div>
+  <p class="note">非布司他片：上市 45、过评 85、仿制申请 55、BE 86、集采 48（generic_cn）；jicai 检索命中 814 条，含大量省级集采中选。苯溴马隆片：上市 7、过评 8、仿制 10、BE 16、集采 0。别嘌醇片：上市 20、过评 8、仿制 7、BE 15、集采 0。降尿酸口服盘已被廉价老药占满，多替诺雷卖的是「新机制 + 谈判药」溢价，不是空白市场。</p>
+</div>
+
+<h2>7. 医保、集采与招标</h2>
+<div class="card">
+  <table>
+    <tr><th>维度</th><th>状态</th></tr>
+    <tr><td>国家医保</td><td>2025 版谈判药、国乙、医保发〔2025〕33 号、2025-12-07 公布，2026-01-01 起执行至 2027-12-31，限痛风伴高尿酸血症</td></tr>
+    <tr><td>基药</td><td>jiyao = 0</td></tr>
+    <tr><td>国家集采</td><td>jicai 本品 item=多替诺雷 total=0；未过评，短期无国采条件</td></tr>
+    <tr><td>招标挂网</td><td>zhaobiao <b>total=43</b>（drug_name=多替诺雷；drug_name=优乐思为 0，商品名在 brand_name 字段）。<a href="https://db.drugsea.cn/zhaobiao">药海招标库</a></td></tr>
+  </table>
+  <p>全部 43 条都是原研 <b>2 mg</b>、文号 HJ20240164、富士药品 Toyama Plant；投标/配送企业多次写卫材（中国）。<b>没有 1 mg 挂网，没有仿制药。</b> 17 个省份有记录。状态：执行 35、拟中标 4、未执行 2、拟挂网 1、未中选 1（黑龙江 2025-07 未中选后 9 月拟挂网）。类别：新增挂网 27、省标 14、价格调整 1、限价挂网 1。年份：2024 年 4 条、2025 年 37 条、2026 年 2 条。</p>
+  <p>公示数字价高度一致：<b>2 mg × 28 片/盒 = 559 元，片价 19.96 元</b>（22 条写 559.00、5 条写 559、28 条片价 19.96）。吉林 2026 年两条标「国谈药品」不写数字；山西/辽宁 14 片包装和部分目录写「*」或「未公示」。福建 8 条日期为 2025-01-01，按年占位处理，不当 1 月 1 日事件。海南/广东最早执行日写 2024-11-17，早于中国进口日 2024-12-06，按平台日期照录，不解释为提前上市。</p>
+  <div class="grid g2">
+    <div>
+      <h3>分省条数</h3>
+      <div id="zbProv" class="chart"></div>
+    </div>
+    <div>
+      <h3>挂网年份</h3>
+      <div id="zbYear" class="chart"></div>
+    </div>
+  </div>
+  <p class="note">国谈价已经挂到省级平台，P3 市场维从 58 提到 63；仿制药 2030 年面对的天花板就是这条 19.96 元/片（续约还可能再降）。挂网不等于医院销量，sales_cn 仍为 0。</p>
+</div>
+
+<h2>8. 销售</h2>
+<div class="grid g2">
+  <div class="card">
+    <h3>中国医院样本（sales_cn）</h3>
+    <p style="font-size:28px;font-weight:700;margin:8px 0">total = 0</p>
+    <p class="note warn">原研 2024-12 才进口，样本期不足，不能用「没销售」否定市场，只能标 <b>不可得</b>。不外推。</p>
+  </div>
+  <div class="card">
+    <h3>日本全终端（drugsales，VIP groupid=205）</h3>
+    <p>富士药品 URECE，医院+零售，1 mg / 2 mg / 500Y 规格粗加：</p>
+    <ul>
+      <li>2023 约 <b>2178 万美元</b></li>
+      <li>2024 约 <b>2783 万美元</b>（约 +28%）</li>
+    </ul>
+    <p>孟加拉已有 DOTIN / DOTFIX / DOTINOR 仿制药销售，金额很小。未拉 2025 年、未拉中国全终端。sales_global 未查。</p>
+    <div id="jpSales" class="chart-sm chart"></div>
+  </div>
+</div>
+
+<h2>9. 全球对照</h2>
+<div class="card">
+  <table>
+    <tr><th>地区</th><th>状态</th></tr>
+    <tr><td>日本</td><td>2020-05-01 上市，ユリス / URECE 0.5 / 1 / 2 mg，富士药品，选择性 URAT1 抑制剂 / 高尿酸血症</td></tr>
+    <tr><td>中国</td><td>2024-12-06 进口 1 / 2 mg；2025 谈判乙类</td></tr>
+    <tr><td>美国</td><td>无 NDA/ANDA 上市；Crystalys 晚期临床中</td></tr>
+    <tr><td>欧盟</td><td>EMA 库 0</td></tr>
+    <tr><td>孟加拉</td><td>已有仿制药终端销售</td></tr>
+  </table>
+  <p class="note">zb_news / se_notice 用日期过滤后 item=多替诺雷 为 0，新闻面不可得。</p>
+</div>
+
+<h2>10. 时间线与甘特</h2>
+<div class="card">
+  <div id="timeline" class="chart-lg chart"></div>
+</div>
+
+<h2>11. 打分明细与情景</h2>
+<div class="card">
+  <table>
+    <tr><th>维度</th><th>默认权重</th><th>现在（2026 获批即想上市）</th><th>2030-09 后上市</th><th>4.1 无效成功提前上市</th></tr>
+    <tr><td>法规与参比</td><td>15%</td><td>92</td><td>92</td><td>92</td></tr>
+    <tr><td>CMC / BE</td><td>15%</td><td>82</td><td>82</td><td>82</td></tr>
+    <tr><td>专利 P2</td><td>30%</td><td>18</td><td>76</td><td>50</td></tr>
+    <tr><td>竞争窗口</td><td>15%</td><td>32</td><td>22</td><td>28</td></tr>
+    <tr><td>市场准入</td><td>20%</td><td>63</td><td>66</td><td>55</td></tr>
+    <tr><td>时间匹配</td><td>5%</td><td>28</td><td>72</td><td>60</td></tr>
+    <tr><td><b>P1</b></td><td>法规×0.5+CMC×0.5</td><td><b>87</b></td><td>87</td><td>87</td></tr>
+    <tr><td><b>P2</b></td><td>专利维</td><td><b>18</b></td><td>76</td><td>50</td></tr>
+    <tr><td><b>P3</b></td><td>竞争×0.4+市场×0.5+时间×0.1</td><td><b>47</b></td><td>49</td><td>45</td></tr>
+    <tr><td><b>立项综合</b></td><td>0.25P1+0.40P2+0.35P3</td><td><b>45</b></td><td><b>69</b></td><td>57</td></tr>
+    <tr><td>决策带</td><td></td><td>综合&lt;45 边缘 / P2&lt;25 且无把握 4.2 → <b>暂缓商业化</b></td><td>综合≈70 且 P2≥60 → <b>按到期排产立项</b></td><td>仅适合有专利诉讼能力的主体</td></tr>
+  </table>
+  <div id="scenario" class="chart" style="margin-top:12px"></div>
+  <p class="note">决策规则按事先约定：综合≥70 且 P2≥60 才建议「现在就按上市投产」。当前不满足。2030 情景综合 69、P2 76，属于「卡位立项、按到期日排产」。</p>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h3>可执行建议</h3>
+  <ol>
+    <li><b>现在做：</b>1 mg / 2 mg 小试与溶出曲线对齐第 93 批优乐思；选 1–2 家 I 状态原料做关联；BE 可启动，但不要把 2026–2027 批文当成可销售资产。</li>
+    <li><b>不要做：</b>按首仿抢量做商业化编制、产线满产、招标团队前置。首仿窗口已被天地恒一占位，且其路线是 4.1/4.2 对赌，跟随诉讼风险不对称。</li>
+    <li><b>排产锚点：</b>化合物到期 <b>2030-09-28</b>。3 类声明企业应把上市日放在该日之后；晶型 2038 公示到期对近端决策权重低。</li>
+    <li><b>跟踪触发：</b>① 化合物专利无效行政 / 司法结果；② 天地恒一 4.1 审评结论；③ 首家过评；④ 2027 谈判续约价 / 挂网 559 是否下调；⑤ 国内医院销售样本出现；⑥ 1 mg 是否补挂网。</li>
+  </ol>
+</div>
+
+<h2>12. 缺数清单（不编造）</h2>
+<div class="card">
+  <table>
+    <tr><th>项目</th><th>状态</th></tr>
+    <tr><td>中国医院销售 sales_cn</td><td>0</td></tr>
+    <tr><td>说明书 shuomingshu</td><td>0</td></tr>
+    <tr><td>中国橙皮书 cn_orange_book</td><td>0</td></tr>
+    <tr><td>招标 zhaobiao</td><td>已取到 43 条；全是原研 2 mg，无仿制、无 1 mg</td></tr>
+    <tr><td>1 mg 挂网价</td><td>zhaobiao 中未出现</td></tr>
+    <tr><td>谈判协议支付价原文</td><td>未取到；省级挂网公示 559 元/28 片与国谈口径一致</td></tr>
+    <tr><td>drugreg_cn / nmpa_reg_patent / fda_dmf / japan_dmf / product_eu / product_us</td><td>0 或未上市</td></tr>
+    <tr><td>zb_news / se_notice</td><td>过滤后 0</td></tr>
+    <tr><td>2025 年日本/中国全终端</td><td>未取到</td></tr>
+    <tr><td>晶型无效判决全文核验</td><td>仅见声明口径引用最高法知民终 7 号</td></tr>
+  </table>
+</div>
+
+<footer>
+  数据来源：药海 DrugSea 库 product_cn、cn_reference_drugs、generic_cn、yzpj_products、reg_cn、zldj、zlsm、cde_yfb_registration、ct_cn、ct_global、yibao、nhsa_code、jiyao、jicai、gov_drugs、zb_news、se_notice、zhaobiao（43 条）、sales_cn、drugsales、product_jp、fda_dmf、product_eu。查询日 2026-09-11；zhaobiao 补查于额度恢复后。打分是框架加权，不是预测模型。本页可离线打开（需能加载 jsDelivr 上的 ECharts）。
+</footer>
+</div>
+
+<script>
+const P = { p1: 87, p2: 18, p3: 47, p2b: 76, p3b: 49, now: 45, y2030: 69, c41: 56 };
+
+function gauge(el, value, color, name) {
+  return {
+    type: 'gauge',
+    center: el,
+    radius: '68%',
+    min: 0, max: 100,
+    splitNumber: 5,
+    axisLine: { lineStyle: { width: 12, color: [[0.45, '#c0392b'], [0.7, '#b7791f'], [1, '#1f7a4d']] } },
+    pointer: { itemStyle: { color: color }, width: 5 },
+    axisTick: { show: false },
+    splitLine: { length: 10, lineStyle: { color: '#94a3b8' } },
+    axisLabel: { fontSize: 10, color: '#64748b' },
+    title: { offsetCenter: [0, '72%'], fontSize: 13, color: '#334155' },
+    detail: { valueAnimation: true, fontSize: 22, offsetCenter: [0, '42%'], color: color, formatter: '{value}' },
+    data: [{ value: value, name: name }]
+  };
+}
+
+echarts.init(document.getElementById('gauges')).setOption({
+  series: [
+    gauge(['17%', '55%'], P.p1, '#1f7a4d', 'P1 可获批'),
+    gauge(['50%', '55%'], P.p2, '#c0392b', 'P2 现在'),
+    gauge(['83%', '55%'], P.p3, '#b7791f', 'P3 值得做')
+  ]
+});
+
+echarts.init(document.getElementById('radar')).setOption({
+  tooltip: {},
+  legend: { data: ['现在想上市', '2030-09 后上市'], bottom: 0 },
+  radar: {
+    indicator: [
+      { name: '法规参比', max: 100 },
+      { name: 'CMC/BE', max: 100 },
+      { name: '专利P2', max: 100 },
+      { name: '竞争窗口', max: 100 },
+      { name: '市场准入', max: 100 },
+      { name: '时间匹配', max: 100 }
+    ],
+    radius: '58%'
+  },
+  series: [{
+    type: 'radar',
+    data: [
+      { value: [92, 82, 18, 32, 63, 28], name: '现在想上市', areaStyle: { opacity: 0.15 } },
+      { value: [92, 82, 76, 22, 66, 72], name: '2030-09 后上市', areaStyle: { opacity: 0.12 } }
+    ]
+  }]
+});
+
+echarts.init(document.getElementById('compBar')).setOption({
+  tooltip: { trigger: 'axis' },
+  grid: { left: 48, right: 16, top: 28, bottom: 40 },
+  xAxis: { type: 'category', data: ['原研上市', '4类申请企业', 'yzpj审评中', 'BE登记', '国内试验', '已过评', '国家集采'] },
+  yAxis: { type: 'value' },
+  series: [{
+    type: 'bar',
+    data: [1, 19, 38, 51, 53, 0, 0],
+    itemStyle: { color: '#1b4f8a' },
+    label: { show: true, position: 'top' }
+  }]
+});
+
+echarts.init(document.getElementById('patentGantt')).setOption({
+  tooltip: { formatter: p => p.name + '<br/>' + p.value[1].slice(0,10) + ' → ' + p.value[2].slice(0,10) },
+  grid: { left: 140, right: 24, top: 24, bottom: 40 },
+  xAxis: { type: 'time', min: '2020-01-01', max: '2039-01-01' },
+  yAxis: { type: 'category', data: ['晶型 ZL201880027057.7', '化合物 ZL201080042866.9', '中国原研独占窗口'] },
+  series: [{
+    type: 'custom',
+    renderItem: function (params, api) {
+      const y = api.coord([0, api.value(0)])[1];
+      const x1 = api.coord([api.value(1), 0])[0];
+      const x2 = api.coord([api.value(2), 0])[0];
+      const h = 18;
+      return {
+        type: 'rect',
+        shape: { x: x1, y: y - h / 2, width: Math.max(x2 - x1, 2), height: h, r: 3 },
+        style: { fill: api.value(3) }
+      };
+    },
+    encode: { x: [1, 2], y: 0 },
+    data: [
+      { name: '晶型公示有效（行业多认已无效）', value: [0, '2023-03-10', '2038-04-26', '#94a3b8'] },
+      { name: '化合物有效', value: [1, '2015-03-25', '2030-09-28', '#c0392b'] },
+      { name: '中国进口至化合物到期', value: [2, '2024-12-06', '2030-09-28', '#1b4f8a'] }
+    ]
+  }]
+});
+
+echarts.init(document.getElementById('peerBar')).setOption({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['中国上市', '已过评', '仿制申请', 'BE', '集采次数(generic)'] },
+  grid: { left: 48, right: 16, top: 36, bottom: 32 },
+  xAxis: { type: 'category', data: ['多替诺雷片', '非布司他片', '苯溴马隆片', '别嘌醇片'] },
+  yAxis: { type: 'value' },
+  series: [
+    { name: '中国上市', type: 'bar', data: [1, 45, 7, 20] },
+    { name: '已过评', type: 'bar', data: [0, 85, 8, 8] },
+    { name: '仿制申请', type: 'bar', data: [19, 55, 10, 7] },
+    { name: 'BE', type: 'bar', data: [51, 86, 16, 15] },
+    { name: '集采次数(generic)', type: 'bar', data: [0, 48, 0, 0] }
+  ]
+});
+
+echarts.init(document.getElementById('zbProv')).setOption({
+  tooltip: { trigger: 'axis' },
+  grid: { left: 48, right: 16, top: 20, bottom: 72 },
+  xAxis: { type: 'category', data: ['福建','广东','江苏','吉林','宁夏','辽宁','黑龙江','山西','河北','湖北','陕西','海南','青海','广西','河南','贵州','四川'], axisLabel: { rotate: 45 } },
+  yAxis: { type: 'value', minInterval: 1 },
+  series: [{
+    type: 'bar',
+    data: [8,4,4,3,3,3,3,2,2,2,2,2,1,1,1,1,1],
+    itemStyle: { color: '#1b4f8a' }
+  }]
+});
+
+echarts.init(document.getElementById('zbYear')).setOption({
+  tooltip: { trigger: 'axis' },
+  grid: { left: 48, right: 16, top: 20, bottom: 32 },
+  xAxis: { type: 'category', data: ['2024','2025','2026'] },
+  yAxis: { type: 'value', minInterval: 1 },
+  series: [{
+    type: 'bar',
+    data: [4, 37, 2],
+    itemStyle: { color: '#1f7a4d' },
+    label: { show: true, position: 'top' }
+  }]
+});
+
+echarts.init(document.getElementById('jpSales')).setOption({
+  tooltip: { trigger: 'axis', formatter: p => p[0].name + '：约 ' + p[0].value + ' 万美元' },
+  grid: { left: 52, right: 16, top: 20, bottom: 28 },
+  xAxis: { type: 'category', data: ['2023', '2024'] },
+  yAxis: { type: 'value', name: '万美元' },
+  series: [{
+    type: 'bar',
+    data: [2178, 2783],
+    itemStyle: { color: '#1b4f8a' },
+    label: { show: true, position: 'top' }
+  }]
+});
+
+echarts.init(document.getElementById('timeline')).setOption({
+  tooltip: { trigger: 'item' },
+  grid: { left: 170, right: 40, top: 20, bottom: 40 },
+  xAxis: { type: 'time', min: '2020-01-01', max: '2031-06-01' },
+  yAxis: { type: 'category', data: ['日本上市', '中国IND', '中国进口+专利公示', '省级挂网559元', '参比第93批', '国乙执行', '4类高峰/BE', '化合物到期'] },
+  series: [{
+    type: 'scatter',
+    symbolSize: 16,
+    itemStyle: { color: '#1b4f8a' },
+    data: [
+      { value: ['2020-05-01', 0], name: '日本上市' },
+      { value: ['2021-03-20', 1], name: '中国IND' },
+      { value: ['2024-12-06', 2], name: '中国进口 2024-12-06；专利公示 12-25' },
+      { value: ['2025-08-15', 3], name: '省级挂网高潮（公示价 559 元/28 片）' },
+      { value: ['2025-07-08', 4], name: '参比第93批' },
+      { value: ['2026-01-01', 5], name: '国乙 2026-01-01 至 2027-12-31' },
+      { value: ['2026-06-01', 6], name: 'BE/ANDA 高峰（查询日仍在审）' },
+      { value: ['2030-09-28', 7], name: '化合物专利到期' }
+    ]
+  }]
+});
+
+echarts.init(document.getElementById('scenario')).setOption({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['P1', 'P2', 'P3', '综合'] },
+  grid: { left: 40, right: 16, top: 36, bottom: 32 },
+  xAxis: { type: 'category', data: ['基准：3类等到2030前不上市', '2030-09后上市', '4.1成功提前上市'] },
+  yAxis: { type: 'value', max: 100 },
+  series: [
+    { name: 'P1', type: 'bar', data: [87, 87, 87] },
+    { name: 'P2', type: 'bar', data: [18, 76, 50] },
+    { name: 'P3', type: 'bar', data: [47, 49, 45] },
+    { name: '综合', type: 'line', data: [45, 69, 57], itemStyle: { color: '#132338' } }
+  ]
+});
+</script>
+</body>
+</html>
