@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<!--
+  立项调研报告模板 —— 复制本文件起稿，替换所有 {{…}} 占位符。
+  排版契约：一个 <section class="sheet"> = 一页 A4（净高 1123px @96dpi）。
+  改完必跑：skills/drug-project-initiation/scripts/audit_pages.sh <本文件绝对路径>
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{品种}}立项调研报告</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
+<style>
+:root{
+  --ink:#1a1a1a; --ink2:#3d3d3d; --muted:#6b7280;
+  --navy:#1f3864; --navy2:#2e5496; --accent:#c00000;
+  --line:#d0d7e2; --tint:#f2f5fa; --tint2:#e7edf6;
+}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+body{
+  margin:0; background:#8d949e;
+  font-family:"Songti SC","Source Han Serif SC","Noto Serif CJK SC",STSong,SimSun,Georgia,serif;
+  color:var(--ink); font-size:10pt; line-height:1.62;
+}
+.sheet{
+  width:210mm; min-height:297mm; margin:10mm auto; background:#fff;
+  padding:18mm 17mm 14mm; position:relative;
+  box-shadow:0 4px 24px rgba(0,0,0,.28);
+}
+/* ---------- running header / footer ---------- */
+.rh{
+  position:absolute; top:10mm; left:18mm; right:18mm;
+  font-size:8pt; color:#8a8f98; text-align:right;
+  border-bottom:.5pt solid var(--line); padding-bottom:2mm;
+  font-family:"Heiti SC","Noto Sans CJK SC","PingFang SC",sans-serif;
+}
+.rf{
+  position:absolute; bottom:8mm; left:18mm; right:18mm;
+  font-size:8pt; color:#8a8f98; text-align:center;
+  font-family:"Heiti SC","Noto Sans CJK SC","PingFang SC",sans-serif;
+}
+.sheet.nochrome .rh,.sheet.nochrome .rf{display:none}
+
+/* ---------- cover ---------- */
+.cover{text-align:center; padding-top:14mm}
+.cover .conf{
+  color:var(--accent); font-size:9pt; letter-spacing:.22em; font-weight:700;
+  font-family:"Heiti SC","PingFang SC",sans-serif; margin-bottom:24mm;
+}
+.cover h1{
+  font-size:40pt; margin:0; color:var(--navy); letter-spacing:.06em;
+  font-family:"Heiti SC","Noto Sans CJK SC","PingFang SC",sans-serif; font-weight:700;
+}
+.cover h2{
+  font-size:24pt; margin:4mm 0 5mm; color:var(--navy); letter-spacing:.28em;
+  font-family:"Heiti SC","PingFang SC",sans-serif; font-weight:700;
+}
+.cover .sub{font-size:12.5pt; color:var(--navy2); font-style:italic; margin-bottom:4mm}
+.cover .en{
+  font-size:9.5pt; color:var(--muted); letter-spacing:.02em;
+  padding-bottom:5mm; border-bottom:2.5pt solid var(--navy); font-family:Georgia,serif;
+}
+.blk-title{
+  font-family:"Heiti SC","PingFang SC",sans-serif; font-weight:700;
+  font-size:10.5pt; color:var(--navy); letter-spacing:.14em; margin:11mm 0 3mm;
+}
+.blk-title.red{color:var(--accent)}
+.cover .idline{font-size:10.5pt; line-height:2.0; color:var(--ink2)}
+.cover .verdict{font-size:11.5pt; font-weight:700; margin-bottom:2mm}
+.cover .verdict b{color:var(--navy)}
+.cover .verdict-note{
+  font-size:10pt; color:var(--ink2); max-width:140mm; margin:0 auto; line-height:1.8;
+}
+.cover .meta{font-size:9.5pt; color:var(--muted); line-height:1.9; margin-top:12mm}
+.cover .disc{
+  font-size:8.5pt; color:#9aa0a8; font-style:italic; line-height:1.7;
+  max-width:150mm; margin:6mm auto 0; text-align:justify;
+}
+
+/* ---------- toc ---------- */
+.toc-h{
+  text-align:center; font-size:20pt; color:var(--navy); letter-spacing:.5em;
+  font-family:"Heiti SC","PingFang SC",sans-serif; font-weight:700;
+  margin:0 0 7mm; padding-left:.5em;
+}
+.toc{list-style:none; padding:0; margin:0}
+.toc li{margin:0}
+.toc a{
+  display:flex; align-items:baseline; text-decoration:none; color:var(--ink);
+  padding:1.15mm 0; border-bottom:.5pt dotted #c8cfda;
+}
+.toc a:hover{color:var(--navy2)}
+.toc .t1 a{font-size:11pt; font-weight:700; font-family:"Heiti SC","PingFang SC",sans-serif}
+.toc .t2 a{font-size:10pt; color:var(--ink2); padding-left:8mm; border-bottom-style:none}
+.toc .nm{flex:0 0 auto}
+.toc .pn{flex:0 0 auto; font-family:Georgia,serif; color:var(--navy); font-weight:700; min-width:5mm; text-align:right}
+.toc .dots{flex:1 1 auto; border-bottom:.5pt dotted #cfd6e0; margin:0 3mm 1mm}
+.toc .t2 .dots{border-bottom-color:#e2e7ee}
+.toc-note{margin-top:8mm; font-size:9pt; color:var(--muted); text-align:center}
+
+/* ---------- headings ---------- */
+h3.ch{
+  font-family:"Heiti SC","Noto Sans CJK SC","PingFang SC",sans-serif;
+  font-size:16.5pt; color:var(--navy); font-weight:700; margin:0 0 5mm;
+  padding-bottom:2.5mm; border-bottom:1.5pt solid var(--navy);
+  letter-spacing:.04em;
+}
+h4.sec{
+  font-family:"Heiti SC","PingFang SC",sans-serif;
+  font-size:12pt; color:var(--navy2); font-weight:700;
+  margin:5.5mm 0 2.5mm; letter-spacing:.02em;
+}
+p{margin:0 0 2.8mm; text-indent:2em; text-align:justify}
+p.noind{text-indent:0}
+p.lead{
+  background:var(--tint); border-left:3pt solid var(--navy2);
+  padding:2.4mm 3.4mm; text-indent:0; margin-bottom:5mm; color:var(--ink2);
+}
+p.key{
+  background:#fdf4f4; border-left:3pt solid var(--accent);
+  padding:2.4mm 3.4mm; text-indent:0; font-weight:700; margin:4mm 0 5mm;
+}
+ul.bl{margin:0 0 4mm; padding-left:6mm}
+ul.bl li{margin-bottom:1.6mm; text-align:justify}
+ul.bl li::marker{color:var(--navy2)}
+
+/* ---------- tables ---------- */
+.cap{
+  font-family:"Heiti SC","PingFang SC",sans-serif; font-size:9.5pt;
+  color:var(--navy2); font-weight:700; margin:4mm 0 1.5mm;
+}
+table{width:100%; border-collapse:collapse; font-size:9pt; line-height:1.5}
+th,td{border:.5pt solid var(--line); padding:1.6mm 2.3mm; text-align:left; vertical-align:top}
+thead th{
+  background:var(--navy); color:#fff; font-weight:700;
+  font-family:"Heiti SC","PingFang SC",sans-serif; border-color:var(--navy);
+}
+tbody tr:nth-child(even){background:var(--tint)}
+td.n{text-align:right; font-variant-numeric:tabular-nums; font-family:Georgia,serif}
+th.n{text-align:right}
+tr.tot td{background:var(--tint2); font-weight:700}
+.src{font-size:8.5pt; color:var(--muted); margin:1mm 0 3mm; text-indent:0}
+
+/* ---------- charts ---------- */
+.chart{width:100%; height:60mm; margin:1.5mm 0 1mm}
+.chart.tall{height:82mm}
+.chart.short{height:50mm}
+.chart.mid{height:70mm}
+
+/* ---------- references ---------- */
+ol.ref{list-style:none; counter-reset:r; padding:0; margin:0; font-size:9pt; line-height:1.6}
+ol.ref li{
+  counter-increment:r; padding-left:9mm; text-indent:-9mm;
+  margin-bottom:1.9mm; text-align:justify;
+}
+ol.ref li::before{content:"[" counter(r) "]  "; color:var(--navy2); font-weight:700}
+
+/* ---------- back cover ---------- */
+.back{text-align:center; padding-top:38mm}
+.back .end{
+  font-family:"Heiti SC","PingFang SC",sans-serif; font-size:16pt;
+  color:var(--navy); font-weight:700; letter-spacing:.3em;
+}
+.back .vline{
+  font-size:11.5pt; color:var(--ink2); margin:3mm 0 8mm; padding-bottom:5mm;
+  border-bottom:2pt solid var(--navy);
+}
+.back .oneline{font-size:11.5pt; max-width:140mm; margin:0 auto; line-height:1.9}
+.back ol.next{
+  list-style:none; padding:0; margin:3mm auto 0; max-width:150mm;
+  text-align:left; font-size:10pt; line-height:1.9; counter-reset:nx;
+}
+.back ol.next li{counter-increment:nx; padding-left:7mm; text-indent:-7mm}
+.back ol.next li::before{
+  content:counter(nx,cjk-ideographic)"、"; color:var(--navy2); font-weight:700;
+}
+.back .foot{margin-top:16mm; font-size:9pt; color:var(--muted); line-height:1.9}
+
+/* ---------- screen-only toolbar ---------- */
+.bar{
+  position:fixed; top:0; left:0; right:0; z-index:99; background:rgba(20,28,42,.94);
+  color:#dbe3ef; font:12px/1 "PingFang SC","Heiti SC",sans-serif;
+  padding:9px 16px; display:flex; gap:18px; align-items:center;
+}
+.bar b{color:#fff; font-weight:600}
+.bar span{color:#96a3b8}
+body{padding-top:34px}
+
+@media print{
+  body{background:#fff; padding-top:0}
+  .bar{display:none}
+  /* 打印与屏幕 1:1：每个 .sheet 即一页 A4，页眉页脚仍相对本页定位。
+     切勿把 .rh/.rf 改成 position:fixed —— 分页媒体下会在每页重复叠加。 */
+  .sheet{
+    width:210mm; min-height:0; height:296.6mm; margin:0;
+    padding:18mm 17mm 14mm; box-shadow:none; overflow:hidden;
+    break-after:page; page-break-after:always;
+  }
+  .sheet:last-child{break-after:auto; page-break-after:auto}
+  @page{size:A4; margin:0}
+  h3.ch{break-after:avoid}
+  .cap,h4.sec{break-after:avoid}
+  table,.chart{break-inside:avoid}
+  tr{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>{{品种}}立项调研报告</b>
+  <span>A4 · 打印就绪 · 数据截止 {{YYYY-MM-DD}}</span>
+  <span>来源：药海 DrugSea 数据库</span>
+</div>
+
+<!-- ============ 封皮 ============ -->
+<section class="sheet nochrome">
+  <div class="cover">
+    <div class="conf">内部资料 · 立项决策用 · 请勿外传</div>
+    <h1>{{品种}}</h1>
+    <h2>立项调研报告</h2>
+    <div class="sub">{{副标题：如 化学药品 4 类仿制可行性、专利自由实施（FTO）与市场准入综合评估}}</div>
+    <div class="en">{{English Title — Generic Feasibility &amp; Freedom-to-Operate Assessment}}</div>
+
+    <div class="blk-title">品 种 识 别</div>
+    <div class="idline">
+      通用名：{{}}　·　商品名：{{}}<br>
+      原研与持证商：{{}}　·　生产场地：{{}}<br>
+      国内参比制剂：{{批次编号与规格}}<br>
+      拟申报类别：{{}}　·　剂型规格：{{}}<br>
+      适应症：{{}}　·　作用靶点：{{}}
+    </div>
+
+    <div class="blk-title red">核 心 结 论</div>
+    <div class="verdict">
+      P1 可获批 <b>{{}}</b> 分　·　P2 现在可合法上市 <b>{{}}</b> 分　·　P3 值得做 <b>{{}}</b> 分
+    </div>
+    <div class="verdict-note">
+      立项综合 <b>{{}}</b> 分 → 结论为「{{建议立项 / 跟踪卡位 / 暂缓}}」：{{一句话说明该结论下做什么、不做什么、锚定哪个日期}}
+    </div>
+
+    <div class="meta">
+      数据来源：药海 DrugSea 数据库　·　数据截止日：{{YYYY 年 M 月 D 日}}<br>
+      编制：{{}}　·　报告版本：V1.0　·　报告日期：{{}}
+    </div>
+    <div class="disc">
+      免责声明：本报告所有数据均来自药海 DrugSea 数据库公开检索结果，未作外推或估算补齐；专利声明部分为申请人自行申报口径的归纳，
+      不构成法律意见，正式立项前须由知识产权部门出具独立 FTO 意见。
+    </div>
+  </div>
+</section>
+
+<!-- ============ 目录（页码由 audit_pages.sh 实测后回填 .pn） ============ -->
+<section class="sheet nochrome">
+  <div class="toc-h">目　录</div>
+  <ul class="toc">
+    <li class="t1"><a href="#c1"><span class="nm">一、背景分析</span><span class="dots"></span><span class="pn">1</span></a></li>
+    <li class="t2"><a href="#c1"><span class="nm">1.1 {{}}　1.2 {{}}　1.3 {{}}</span></a></li>
+    <li class="t1"><a href="#c2"><span class="nm">二、调研框架与数据来源</span><span class="dots"></span><span class="pn">2</span></a></li>
+    <!-- 三～十五章同式续写 -->
+  </ul>
+  <div class="toc-note">全文共 {{N}} 张数据表与 {{M}} 张图</div>
+</section>
+
+<!-- ============ 正文：每章一个 .sheet，续页不写 h3.ch ============ -->
+<section class="sheet" id="c1">
+  <div class="rh">{{品种}}立项调研报告　·　数据截止 {{YYYY-MM-DD}}</div>
+  <h3 class="ch">一、背景分析</h3>
+
+  <h4 class="sec">1.1 {{小节标题}}</h4>
+  <p>{{正文}}</p>
+
+  <h4 class="sec">1.2 {{小节标题}}</h4>
+  <p>{{正文}}</p>
+  <p class="key">{{硬约束或决定性判断，一页最多 1–2 个}}</p>
+
+  <div class="cap">表 1-1　{{表标题}}</div>
+  <table>
+    <thead><tr><th style="width:24%">{{列}}</th><th>{{列}}</th><th class="n" style="width:12%">{{数值列}}</th></tr></thead>
+    <tbody>
+      <tr><td>{{}}</td><td>{{}}</td><td class="n">{{}}</td></tr>
+      <tr class="tot"><td>{{合计行}}</td><td>{{}}</td><td class="n">{{}}</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cap">图 1-1　{{图标题}}</div>
+  <div id="ch1" class="chart"></div>
+  <p class="src">来源：{{库名}}</p>
+
+  <p class="lead">{{方法论说明或定性小结}}</p>
+  <div class="rf">第 1 页</div>
+</section>
+
+<!-- ============ 参考文献 ============ -->
+<section class="sheet" id="c15">
+  <div class="rh">{{品种}}立项调研报告　·　数据截止 {{YYYY-MM-DD}}</div>
+  <h3 class="ch">十五、参考文献</h3>
+  <p>本报告全部数据来源于药海 DrugSea 数据库（<a href="https://db.drugsea.cn" style="color:#2e5496">https://db.drugsea.cn</a>）各子库检索结果，检索日期为 {{YYYY 年 M 月 D 日}}。以下按引用顺序列出数据源与关键文件依据。</p>
+  <ol class="ref">
+    <li>药海 DrugSea，{{库名}}（{{库中文名}}）。检索项：{{}}。{{关键编号与结论}}</li>
+    <li>{{政策文件：发文机关、文号、公布日期、执行期}}。经由药海 DrugSea {{库名}} 库检索获得。</li>
+    <li>药海 DrugSea，{{各返回 0 条的库并列}}。上述各库对本品种检索结果均为 0 条。</li>
+  </ol>
+  <div class="rf">第 {{N}} 页</div>
+</section>
+
+<!-- ============ 封底 ============ -->
+<section class="sheet nochrome">
+  <div class="back">
+    <div class="end">报 告 结 束</div>
+    <div class="vline">{{品种}}立项调研报告　·　V1.0</div>
+
+    <div class="blk-title red">一 句 话 结 论</div>
+    <div class="oneline">{{一句话结论，锚定关键日期}}</div>
+
+    <div class="blk-title">下 一 步 动 作</div>
+    <ol class="next">
+      <li>{{}}</li>
+      <li>{{}}</li>
+      <li>{{}}</li>
+      <li>{{}}</li>
+    </ol>
+
+    <div class="foot">
+      数据来源：药海 DrugSea 数据库　·　数据截止：{{YYYY 年 M 月 D 日}}　·　编制：{{}}<br>
+      本报告为内部立项决策参考，所载打分为框架加权结果而非预测模型输出，专利部分不构成法律意见。
+    </div>
+  </div>
+</section>
+
+<script>
+const NAVY='#1f3864', BLUE='#2e5496', TEAL='#2f8f7a', AMBER='#c8811a', RED='#c00000', GREY='#8b95a5';
+const baseFont = { fontFamily:'PingFang SC, Heiti SC, sans-serif', fontSize:11 };
+const charts = [];
+function mk(id, opt){
+  const el = document.getElementById(id);
+  if (!el) return;                                  // 容器不存在时静默跳过
+  const c = echarts.init(el, null, { renderer:'svg' });   // svg：打印为矢量
+  c.setOption(opt);
+  charts.push(c);
+}
+
+// 横向 bar：类目名较长时用它
+mk('ch1', {
+  textStyle: baseFont,
+  grid: { left:8, right:28, top:14, bottom:8, containLabel:true },
+  xAxis: { type:'value', minInterval:1, splitLine:{ lineStyle:{ type:'dashed', color:'#e3e8f0' } } },
+  yAxis: {
+    type:'category', inverse:true, data:['{{类目}}','{{类目}}'],
+    axisTick:{ show:false }, axisLine:{ lineStyle:{ color:'#c9d2e0' } }
+  },
+  series: [{
+    type:'bar', barWidth:'60%', itemStyle:{ color:NAVY }, data:[0, 0],
+    label:{ show:true, position:'right', color:'#3d3d3d' }
+  }]
+});
+
+window.addEventListener('resize',      () => charts.forEach(c => c.resize()));
+window.addEventListener('beforeprint', () => charts.forEach(c => c.resize()));
+</script>
+</body>
+</html>

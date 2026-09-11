@@ -38,3 +38,6 @@ yarn-error.log*
 .pnp.*
 .pnpm-store/
 .pnpm-debug.log
+
+# Generated due-diligence reports (local only)
+reports/
