@@ -4,6 +4,11 @@ Companies, package inserts, targets, TCM, patents, news, announcements and regul
 
 10 databases: `zb_news`, `se_notice`, `drug_law`, `cn_company`, `herb_formulas`, `herbs`, `zldj`, `zlsm`, `shuomingshu`, `targets`
 
+News / announcement DBs (`zb_news`, `se_notice`, `drug_law`) often include file
+attachments on `yaohai-detail`. When `dp2_attachments_path` is present, prefer
+`https://db.drugsea.cn/api/oss/{dp2_attachments_path}` over `original_source_url`
+— see **Attachments** in [SKILL.md](../SKILL.md#gotchas).
+
 ---
 
 ## `zb_news` — 全国招标动态

@@ -201,13 +201,13 @@ PUBLISHED_LATEST="$(npm view "$PKG_NAME" version 2>/dev/null || echo "")"
 ok "package.json : $CURRENT_VERSION"
 ok "registry     : ${PUBLISHED_LATEST:-<never published>}"
 
-# Warn on the drift we know about: src/index.ts PACKAGE_VERSION vs package.json.
+# Warn on the drift we know about: src/environment.ts PACKAGE_VERSION vs package.json.
 SRC_VERSION="$(node -p "
-  const m = require('fs').readFileSync('src/index.ts','utf8').match(/PACKAGE_VERSION\s*=\s*[\"']([^\"']+)[\"']/);
+  const m = require('fs').readFileSync('src/environment.ts','utf8').match(/PACKAGE_VERSION\s*=\s*[\"']([^\"']+)[\"']/);
   m ? m[1] : '';
 ")"
 if [[ -n "$SRC_VERSION" && "$SRC_VERSION" != "$CURRENT_VERSION" ]]; then
-  warn "src/index.ts PACKAGE_VERSION ($SRC_VERSION) != package.json ($CURRENT_VERSION) — will be synced"
+  warn "src/environment.ts PACKAGE_VERSION ($SRC_VERSION) != package.json ($CURRENT_VERSION) — will be synced"
 fi
 
 if [[ -n "$TARGET_VERSION" ]]; then
@@ -270,10 +270,11 @@ ok "release version: ${C_BOLD}$CURRENT_VERSION → $NEXT_VERSION${C_RESET}"
 # ---------------------------------------------------------------------------
 step "5/9  Apply version + clean build"
 # ---------------------------------------------------------------------------
-# Sync src/index.ts's PACKAGE_VERSION with package.json so MCP clients see the
-# right serverInfo version. The logic lives in scripts/sync-version.mjs, which
-# documents the idempotency contract: a re-run after an aborted release finds
-# the constant already correct, and that is a no-op SUCCESS — not a failure.
+# Sync src/environment.ts's PACKAGE_VERSION with package.json so MCP clients and
+# the API User-Agent see the right version. The logic lives in
+# scripts/sync-version.mjs, which documents the idempotency contract: a re-run
+# after an aborted release finds the constant already correct, and that is a
+# no-op SUCCESS — not a failure.
 #
 # --check runs it read-only, so --dry-run exercises the same code path instead
 # of skipping it. An earlier bug hid in this exact spot because dry-run never
@@ -281,10 +282,10 @@ step "5/9  Apply version + clean build"
 if [[ $DRY_RUN -eq 1 ]]; then
   warn "--dry-run: package.json left untouched; checking PACKAGE_VERSION sync read-only"
   SYNC_OUT="$(node scripts/sync-version.mjs --target "$NEXT_VERSION" --check)" \
-    || die "could not verify src/index.ts PACKAGE_VERSION — see error above"
+    || die "could not verify src/environment.ts PACKAGE_VERSION — see error above"
   case "$SYNC_OUT" in
-    ALREADY=*) ok "src/index.ts PACKAGE_VERSION already $NEXT_VERSION (nothing to do)" ;;
-    WOULD=*)   ok "would set src/index.ts PACKAGE_VERSION ${SYNC_OUT#WOULD=}" ;;
+    ALREADY=*) ok "src/environment.ts PACKAGE_VERSION already $NEXT_VERSION (nothing to do)" ;;
+    WOULD=*)   ok "would set src/environment.ts PACKAGE_VERSION ${SYNC_OUT#WOULD=}" ;;
     *)         die "unexpected version-sync result: $SYNC_OUT" ;;
   esac
 else
@@ -292,10 +293,10 @@ else
   ok "package.json → $NEXT_VERSION"
 
   SYNC_OUT="$(node scripts/sync-version.mjs --target "$NEXT_VERSION")" \
-    || die "could not sync src/index.ts PACKAGE_VERSION — see error above"
+    || die "could not sync src/environment.ts PACKAGE_VERSION — see error above"
   case "$SYNC_OUT" in
-    ALREADY=*) ok "src/index.ts PACKAGE_VERSION already $NEXT_VERSION" ;;
-    SET=*)     ok "src/index.ts PACKAGE_VERSION → ${SYNC_OUT#SET=}" ;;
+    ALREADY=*) ok "src/environment.ts PACKAGE_VERSION already $NEXT_VERSION" ;;
+    SET=*)     ok "src/environment.ts PACKAGE_VERSION → ${SYNC_OUT#SET=}" ;;
     *)         die "unexpected version-sync result: $SYNC_OUT" ;;
   esac
 

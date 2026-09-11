@@ -382,7 +382,7 @@ echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"product-cn
 
 ## Releasing (maintainers)
 
-`publish.sh` releases the package to npm (which is what makes `npx -y @kinginsun/mcp-drugsea@latest` work). It syncs `src/index.ts`'s `PACKAGE_VERSION` with `package.json`, builds clean, audits the tarball for leaked tokens, runs the 13-tool suite plus the facet and update-check suites, commits + tags, then publishes and pushes.
+`publish.sh` releases the package to npm (which is what makes `npx -y @kinginsun/mcp-drugsea@latest` work). It syncs `src/environment.ts`'s `PACKAGE_VERSION` with `package.json`, builds clean, audits the tarball for leaked tokens, runs the 13-tool suite plus the facet and update-check suites, commits + tags, then publishes and pushes.
 
 ```bash
 npm login                # once, with rights on the @kinginsun scope

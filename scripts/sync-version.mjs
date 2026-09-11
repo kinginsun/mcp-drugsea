@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * Sync src/index.ts's PACKAGE_VERSION constant with the package version.
+ * Sync src/environment.ts's PACKAGE_VERSION constant with the package version.
  *
  * Why this exists: the MCP server reports its version to clients from the
- * PACKAGE_VERSION constant in src/index.ts. If it drifts from package.json,
- * clients see a stale version string. publish.sh calls this on every release.
+ * PACKAGE_VERSION constant in src/environment.ts. The same value is also used
+ * in the API User-Agent fingerprint. If it drifts from package.json, clients
+ * and API logs see a stale version string. publish.sh calls this on every release.
  *
  * Idempotency contract (important — a past release aborted here):
  *   Re-running after an aborted release finds the constant ALREADY holding the
@@ -29,7 +30,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const TARGET_FILE = join(ROOT, "src/index.ts");
+const TARGET_FILE = join(ROOT, "src/environment.ts");
 
 // Matches both quote styles so a future reformat does not silently break sync.
 const CONSTANT_RE = /PACKAGE_VERSION\s*=\s*["']([^"']+)["']/;
@@ -56,14 +57,14 @@ let src;
 try {
   src = readFileSync(TARGET_FILE, "utf8");
 } catch (err) {
-  fail(`cannot read src/index.ts: ${err.message}`);
+  fail(`cannot read src/environment.ts: ${err.message}`);
 }
 
 const match = src.match(CONSTANT_RE);
 if (!match) {
   // The genuinely-broken case: the constant is absent entirely. This must stay
   // distinguishable from the idempotent no-op case above.
-  fail(`PACKAGE_VERSION constant not found in src/index.ts — expected \`const PACKAGE_VERSION = "x.y.z"\``);
+  fail(`PACKAGE_VERSION constant not found in src/environment.ts — expected \`const PACKAGE_VERSION = "x.y.z"\``);
 }
 
 const current = match[1];

@@ -55,8 +55,7 @@ import {
   checkForUpdate,
   formatUpdateMessage,
 } from "./update-check.js";
-
-const PACKAGE_VERSION = "0.8.0";
+import { PACKAGE_NAME, PACKAGE_VERSION } from "./environment.js";
 
 const YAOHAI_LIMIT_MAX = 50;
 const YAOHAI_LIMIT_DEFAULT = 10;
@@ -106,7 +105,7 @@ process.on("unhandledRejection", (reason, promise) => {
 
 const server = new Server(
   {
-    name: "mcp-drugsea",
+    name: PACKAGE_NAME,
     version: PACKAGE_VERSION,
   },
   {

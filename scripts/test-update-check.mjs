@@ -25,8 +25,8 @@ const SERVER_ENTRY = join(PROJECT_ROOT, "dist/index.js");
 /**
  * Version fixtures are DERIVED, never hardcoded.
  *
- * publish.sh bumps package.json and syncs src/index.ts's PACKAGE_VERSION *before*
- * running the test suites. A hardcoded expected version therefore goes stale the
+ * publish.sh bumps package.json and syncs src/environment.ts's PACKAGE_VERSION
+ * *before* running the test suites. A hardcoded expected version therefore goes stale the
  * moment the release version moves (this suite failed on the 0.4.0 -> 0.5.0 bump
  * for exactly that reason). package.json is the source of truth that publish.sh
  * itself syncs from, so reading it keeps the assertions correct at any version.
@@ -220,13 +220,13 @@ async function main() {
     let builtVersion = "unreadable";
     try {
       const source = readFileSync(
-        join(PROJECT_ROOT, "dist/index.js"),
+        join(PROJECT_ROOT, "dist/environment.js"),
         "utf8"
       );
       const m = source.match(/PACKAGE_VERSION\s*=\s*["']([^"']+)["']/);
-      builtVersion = m ? m[1] : "not found in dist/index.js";
+      builtVersion = m ? m[1] : "not found in dist/environment.js";
     } catch {
-      builtVersion = "dist/index.js missing";
+      builtVersion = "dist/environment.js missing";
     }
     if (builtVersion !== CURRENT_VERSION) {
       console.error(

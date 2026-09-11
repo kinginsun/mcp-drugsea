@@ -1,6 +1,10 @@
 ---
 name: drugsea
-description: One-stop search across all 63 DrugSea / 药海遨游 (Yaohai) pharmaceutical databases via the user-drugsea MCP tools. Use when the user asks about drug approvals, registrations, CDE reviews, clinical trials, sales, tenders, centralized procurement, insurance/essential-drug lists, patents, companies, package inserts, or regulatory news — in Chinese or English. Covers marketed vs pipeline routing, field meanings, accepted value types, facet filtering, ATC therapeutic classes, and detail drill-down.
+description: >-
+  药海/Yaohai：国内上市、国药准字、批准文号、注册审评、CDE受理、在研、医保、集采、临床试验。
+  One-stop search across all 63 DrugSea databases via the user-drugsea MCP tools.
+  Covers marketed vs pipeline routing, field meanings, accepted value types,
+  facet filtering, ATC therapeutic classes, and detail drill-down.
 ---
 
 # DrugSea / 药海遨游 one-stop search
@@ -330,6 +334,16 @@ re-query; each new condition gets its own window.
   `https://db.drugsea.cn/api/disabled`** — it is not a usable link. Use the detail tool
   with the item's `id` instead. `yaohai-search` and `yaohai-global-search` do return
   working `detail_url` values.
+- **Attachments (附件) in `yaohai-detail`** — the `attachments` field is a
+  semicolon-separated string. Each attachment has these segments (in order):
+  `file_hash; file_id; filename; original_source_url; file_extension; dp2_attachments_path`.
+  When `dp2_attachments_path` is present, **prefer it** and download via DrugSea's
+  QingCloud OSS proxy:
+  `https://db.drugsea.cn/api/oss/{dp2_attachments_path}`
+  Example: `https://db.drugsea.cn/api/oss/dp2_attachments/78544f94d967d68cb4d9a14b9f6378bb`
+  Do not use `original_source_url` unless the OSS path is empty — source URLs may
+  expire or require authentication. Use this for PDF/XLS/XLSX attachments from news
+  databases like `zb_news`, `se_notice`, `drug_law`, etc.
 - **`ATC_code` in returned rows is a Chinese class name** (e.g. `心血管系统`), but the
   **filter value is a single letter** (e.g. `C`). Do not copy row values into filters.
 - **Result item shape differs between tools.** `product-cn-search` and `reg-cn-search`

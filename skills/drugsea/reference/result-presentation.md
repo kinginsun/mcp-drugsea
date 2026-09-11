@@ -151,7 +151,7 @@ status. See [query-syntax.md](query-syntax.md#yaohai-facets-throws-where-search-
 
 List rows carry 40–60 fields. The MCP layer already **strips** the pure-noise ones
 (`related_drug_names`, `ProductID`, `XUI`, `DrugUID`, `dp2_id`, `gcid`, `UniqueID`,
-`created_at`, `updated_at`, `timeline`, internal flags like
+`created_at`, `updated_at`, `timeline`, `zb_num`, `zc_num`, internal flags like
 `rows_excluded` / `is_47` / `has_detail`; plus `is_jicai` on `product_cn` and
 `conclusion_bak` / `orig_transact_status` / `slh2` on `reg_cn`), so they never reach
 you — do not expect them, and if one still appears (stale server build), ignore it.

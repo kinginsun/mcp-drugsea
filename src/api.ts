@@ -4,6 +4,7 @@ import { URL } from "node:url";
 import type { QueryObject } from "./types.js";
 import { normalizeRecord, parseFacetList, stripMcpFields } from "./normalize.js";
 import type { FacetField } from "./fields.js";
+import { ENVIRONMENT_FINGERPRINT } from "./environment.js";
 
 export class MissingTokenError extends Error {
   constructor(message?: string) {
@@ -42,6 +43,7 @@ export function getAuthHeaders(
   const token = getUserToken();
   return {
     ...extra,
+    "User-Agent": ENVIRONMENT_FINGERPRINT.userAgent,
     Authorization: `Bearer ${token}`,
   };
 }
