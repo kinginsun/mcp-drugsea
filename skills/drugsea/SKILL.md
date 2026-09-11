@@ -250,6 +250,11 @@ behaviour for malformed ranges — are in [query-syntax.md](reference/query-synt
 Use `offset` to page. The total match count comes back as `total` (the raw API
 field is `tnum`). Never request more than you will actually show.
 
+**1000-row window per query condition (client + server enforced):** `offset + limit`
+is capped at 1000 for one set of filters — changing `offset` never unlocks more rows.
+When you hit the edge, narrow the filters (date / province / ATC / enterprise) and
+re-query; each new condition gets its own window.
+
 ## Standard workflow
 
 1. Route (tables above) → pick `dbname` + tool.

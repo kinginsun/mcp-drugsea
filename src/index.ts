@@ -9,6 +9,7 @@ import {
 import {
   clampLimit,
   clampOffset,
+  enforceRetrievalWindow,
   fetchDetail,
   fetchFacets,
   listSearch,
@@ -55,7 +56,7 @@ import {
   formatUpdateMessage,
 } from "./update-check.js";
 
-const PACKAGE_VERSION = "0.7.1";
+const PACKAGE_VERSION = "0.8.0";
 
 const YAOHAI_LIMIT_MAX = 50;
 const YAOHAI_LIMIT_DEFAULT = 10;
@@ -71,6 +72,9 @@ const QUERY_PROP = {
 
 const PRESENTATION_HINT =
   "If total > 20, summarize in chat (about 5–10 sample rows) instead of dumping the full table. Include frontend source links when present.";
+
+const RETRIEVAL_CAP_HINT =
+  "One distinct query condition can return at most 1000 rows total (offset+limit window cap, anti-scraping): paginate within that window, or narrow the filters (date / province / ATC / enterprise) to reach deeper slices — a too-large offset is rejected.";
 
 const ROUTING_HINT =
   "Already-marketed China products (国药准字, 批准文号, 上市, 医保/集采) → product-cn-* tools. R&D / CDE pipeline (在研, 受理号, 审评, 尚未上市) → reg-cn-* tools. Other DBs (医保 yibao, 基药 jiyao, 集采 jicai, trials, global) → yaohai-*. Do not use yaohai-search with dbname product_cn or reg_cn when the dedicated tools apply.";
@@ -143,6 +147,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "yaohai-search",
         description:
           "Search a single Yaohai database by dbname (from yaohai-catalog). Default limit 10, max 50. " +
+          RETRIEVAL_CAP_HINT +
+          " " +
           "Use query fields from the catalog's search_fields. " +
           ROUTING_HINT +
           " " +
@@ -160,7 +166,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "number",
               description: `Row cap (default ${YAOHAI_LIMIT_DEFAULT}, max ${YAOHAI_LIMIT_MAX})`,
             },
-            offset: { type: "number", description: "Pagination offset (default 0)" },
+            offset: { type: "number", description: "Pagination offset (default 0); offset+limit is capped at 1000 rows per query condition" },
           },
           required: ["dbname"],
         },
@@ -209,6 +215,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "yaohai-global-search",
         description:
           "Global drug panorama search (global_search). Pass q as the search term, or query.term. " +
+          RETRIEVAL_CAP_HINT +
+          " " +
           PRESENTATION_HINT,
         inputSchema: {
           type: "object",
@@ -219,7 +227,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "number",
               description: `Row cap (default ${YAOHAI_LIMIT_DEFAULT}, max ${YAOHAI_LIMIT_MAX})`,
             },
-            offset: { type: "number", description: "Pagination offset (default 0)" },
+            offset: { type: "number", description: "Pagination offset (default 0); offset+limit is capped at 1000 rows per query condition" },
           },
         },
       },
@@ -236,6 +244,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           "Default search_mode=3 (partial). first_approve_date = first listing date; approve_date = latest re-registration (not first listing). " +
           ATC_HINT +
           " Default limit 20, max 100. " +
+          RETRIEVAL_CAP_HINT +
+          " " +
           "Not for R&D pipeline — use reg-cn-search. " +
           PRESENTATION_HINT,
         inputSchema: {
@@ -251,7 +261,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "number",
               description: `Row cap (default ${CN_LIMIT_DEFAULT}, max ${CN_LIMIT_MAX})`,
             },
-            offset: { type: "number", description: "Pagination offset (default 0)" },
+            offset: { type: "number", description: "Pagination offset (default 0); offset+limit is capped at 1000 rows per query condition" },
             view_type: {
               type: "string",
               enum: [...PRODUCT_CN_VIEW_TYPES],
@@ -304,7 +314,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           "Search China drug registration / CDE review (reg_cn): 在研, 受理号, 申报, 审评进度, not-yet-listed. " +
           "Default rows_excluded=1 (drop 备案), search_mode=1. " +
           ATC_HINT +
-          " Default limit 20, max 100. Not for already-marketed products — use product-cn-search. " +
+          " Default limit 20, max 100. " +
+          RETRIEVAL_CAP_HINT +
+          " " +
+          "Not for already-marketed products — use product-cn-search. " +
           PRESENTATION_HINT,
         inputSchema: {
           type: "object",
@@ -319,7 +332,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "number",
               description: `Row cap (default ${CN_LIMIT_DEFAULT}, max ${CN_LIMIT_MAX})`,
             },
-            offset: { type: "number", description: "Pagination offset (default 0)" },
+            offset: { type: "number", description: "Pagination offset (default 0); offset+limit is capped at 1000 rows per query condition" },
             view_type: {
               type: "string",
               enum: [...REG_CN_VIEW_TYPES],
@@ -410,11 +423,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
       case "yaohai-search": {
         const validated = YaohaiSearchSchema.parse(args);
+        const window = enforceRetrievalWindow(
+          clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX),
+          clampOffset(validated.offset)
+        );
         const content = await yaohaiPost("/g/mcp/yaohai/search", {
           dbname: validated.dbname,
           query: asQuery(validated.query),
-          limit: clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX),
-          offset: clampOffset(validated.offset),
+          limit: window.limit,
+          offset: window.offset,
         });
         return ok(content);
       }
@@ -507,10 +524,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (validated.q && (query.term === undefined || query.term === "")) {
           query.term = validated.q;
         }
+        const window = enforceRetrievalWindow(
+          clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX),
+          clampOffset(validated.offset)
+        );
         const content = await yaohaiPost("/g/mcp/yaohai/global-search", {
           query,
-          limit: clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX),
-          offset: clampOffset(validated.offset),
+          limit: window.limit,
+          offset: window.offset,
         });
         return ok(content);
       }
@@ -526,8 +547,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const validated = ProductCnSearchSchema.parse(args ?? {});
         const viewType = validated.view_type ?? "eslist";
         const query = applyProductCnDefaults(asQuery(validated.query)) as QueryObject;
-        const limit = clampLimit(validated.limit, CN_LIMIT_DEFAULT, CN_LIMIT_MAX);
-        const offset = clampOffset(validated.offset);
+        const window = enforceRetrievalWindow(
+          clampLimit(validated.limit, CN_LIMIT_DEFAULT, CN_LIMIT_MAX),
+          clampOffset(validated.offset)
+        );
+        const limit = window.limit;
+        const offset = window.offset;
         const content = prefersMcpListApi()
           ? await mcpDbSearch({
               dbname: "product_cn",
@@ -580,8 +605,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const validated = RegCnSearchSchema.parse(args ?? {});
         const viewType = validated.view_type ?? "eslist";
         const query = applyRegCnDefaults(asQuery(validated.query)) as QueryObject;
-        const limit = clampLimit(validated.limit, CN_LIMIT_DEFAULT, CN_LIMIT_MAX);
-        const offset = clampOffset(validated.offset);
+        const window = enforceRetrievalWindow(
+          clampLimit(validated.limit, CN_LIMIT_DEFAULT, CN_LIMIT_MAX),
+          clampOffset(validated.offset)
+        );
+        const limit = window.limit;
+        const offset = window.offset;
         const content = prefersMcpListApi()
           ? await mcpDbSearch({
               dbname: "reg_cn",

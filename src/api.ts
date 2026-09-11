@@ -118,6 +118,27 @@ export function clampOffset(offset: number | undefined): number {
   return Math.max(0, Math.trunc(offset));
 }
 
+/**
+ * 单组查询条件最多可获取的行数窗口（与服务端 yaohai_mcp_max_retrieve() 同步，
+ * 默认 1000）：offset+limit 超出窗口则收缩 limit；offset 已达窗口直接报错，
+ * 提示收窄筛选条件而不是继续翻页。
+ */
+export const MAX_RETRIEVE_PER_QUERY = 1000;
+
+export function enforceRetrievalWindow(
+  limit: number,
+  offset: number,
+  max: number = MAX_RETRIEVE_PER_QUERY
+): { limit: number; offset: number } {
+  if (offset >= max) {
+    throw new ApiError(
+      `A single query condition can return at most ${max} rows（单个查询条件最多获取 ${max} 条）: ` +
+        `offset=${offset} 已超出窗口上限。请收窄筛选条件（如日期/省份/ATC/企业名）后分页查询。`
+    );
+  }
+  return { limit: Math.min(limit, max - offset), offset };
+}
+
 function httpRequest(
   method: string,
   urlStr: string,

@@ -178,12 +178,18 @@ xlsx export is not implemented in this MCP (v1 returns JSON samples only).
 | Tool | Parameters | Notes |
 |------|------------|--------|
 | `yaohai-catalog` | `category?`, `q?` | List databases |
-| `yaohai-search` | `dbname`, `query?`, `limit?`, `offset?` | Default limit 10, max 50 |
+| `yaohai-search` | `dbname`, `query?`, `limit?`, `offset?` | Default limit 10, max 50; ≤ 1000 rows per query condition (offset+limit window cap) |
 | `yaohai-detail` | `dbname`, `id` | Skip DBs with `has_detail: false` |
 | `yaohai-facets` | `dbname?`, `query?`, `fields?` | Facets for `dbs`-route DBs. Omit `fields` → discover facet-capable DBs/fields; pass `fields` → fetch buckets |
 | `yaohai-global-search` | `q?`, `query?`, `limit?`, `offset?` | `q` fills `query.term` |
 
 When the target database is unclear, use `yaohai-catalog` (filter by `category` / `q`) to pick a `dbname`, then `yaohai-search`; or use `yaohai-global-search` for a cross-database panorama query.
+
+> **Retrieval cap (anti-scraping, enforced client + server):** one distinct query
+> condition can return at most **1000 rows** (`offset + limit ≤ 1000`). A larger
+> `offset` is rejected; `limit` is auto-shrunk near the edge of the window. To
+> reach deeper slices, narrow the filters (date / province / ATC / enterprise)
+> and query again — each *new* condition gets its own 1000-row window.
 
 `yaohai-facets` mirrors the ConditionSearch facet filters of the website for the `dbs`-route databases (医保 `yibao`, 基药 `jiyao`, 集采 `jicai`, sales `drugsales`, …). Two modes:
 
