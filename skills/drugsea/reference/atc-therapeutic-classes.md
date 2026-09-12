@@ -339,7 +339,7 @@ Two steps — the molecule is named, so no ATC filter is needed:
 {"query": {"item": "阿托伐他汀"}, "facets": ["ATC_code", "national_yibao", "drug_type"]}
 ```
 
-Returns `ATC_code: C (277)`, `drug_type: 化学药品 (277)`, and `national_yibao` buckets
+Returns `ATC_code: C (~279)`, `drug_type: 化学药品 (~279)`, and `national_yibao` buckets
 `国乙2025版 (237)`, `国乙2024版 (231)`, … , `国乙2024版谈判药 (6)`, `其他 (40)`.
 So: cardiovascular (C), chemical drug, national insurance class 乙 across every edition
 since 2009.

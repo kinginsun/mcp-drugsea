@@ -486,11 +486,7 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 
 > **Rows are varieties (品种), not individual products** — each carries counts like `yzpj_passed` (已过评), `listing_num` (中国上市), `jicai_num` (国家集采). `has_detail: false`.
 
-**Only `drug_name` works reliably.** `enterprise` is silently dropped (returns all 3,823 varieties), and `manufacture` — although the backend reads it (`make_generic_product_search_sql`) — **throws a SQL error** because the column does not exist:
-
-```
-SQLSTATE[42S22]: Column not found: 1054 Unknown column 'manufacture' in 'where clause'
-```
+**Usable keys are `drug_name` and `dosage_form`.** There is no company column on `generic_basic_info`. `enterprise` / `manufacture` are not valid — MCP rejects them (or lists them in `query_ignored`) instead of returning all 3,823 varieties or a SQL error.
 
 To find a company's consistency-evaluation varieties, use `product_cn` with `is_passed_yizhi` / `gj_passed_yizhi` instead.
 
@@ -499,7 +495,7 @@ To find a company's consistency-evaluation varieties, use `product_cn` with `is_
 | Key | Verified | Label |
 |---|---|---|
 | `drug_name` | ✓ | 药品名称 |
-| `enterprise` | ✗ broken | 企业名称 |
+| `dosage_form` | ✓ | 剂型 |
 
 ### Facet / filter fields
 
@@ -520,16 +516,10 @@ To find a company's consistency-evaluation varieties, use `product_cn` with `is_
 {"query": {"drug_name": "阿托伐他汀"}, "limit": 20}
 ```
 
-**✗ WRONG — `enterprise` is silently dropped; returns all 3,823 varieties**
+**✗ Not a company database.** `enterprise` / `manufacture` are invalid keys (MCP error), not a full-catalogue result.
 
 ```jsonc
 {"query": {"enterprise": "齐鲁制药"}, "limit": 20}
-```
-
-**✗ BROKEN — `manufacture` is in the backend code but the column does not exist: SQL error 1054**
-
-```jsonc
-{"query": {"manufacture": "齐鲁制药"}, "limit": 20}
 ```
 
 ---

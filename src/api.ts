@@ -2,8 +2,9 @@ import http from "node:http";
 import https from "node:https";
 import { URL } from "node:url";
 import type { QueryObject } from "./types.js";
-import { normalizeRecord, parseFacetList, stripMcpFields } from "./normalize.js";
+import { normalizeRecord, parseFacetList, stripMcpFields, usableDetailUrl } from "./normalize.js";
 import type { FacetField } from "./fields.js";
+import { attachAtcLetter } from "./fields.js";
 import { ENVIRONMENT_FINGERPRINT } from "./environment.js";
 
 export class MissingTokenError extends Error {
@@ -350,8 +351,12 @@ export async function mcpDbSearch(opts: {
             const stripped = stripMcpFields(flat as Record<string, unknown>, {
               dbname: opts.dbname,
             });
-            if (row.detail_url) {
-              return { ...stripped, detail_url: row.detail_url };
+            if (opts.dbname === "product_cn" || opts.dbname === "reg_cn") {
+              attachAtcLetter(stripped);
+            }
+            const detailUrl = usableDetailUrl(row.detail_url);
+            if (detailUrl) {
+              return { ...stripped, detail_url: detailUrl };
             }
             return stripped;
           }
@@ -375,6 +380,23 @@ export async function mcpDbSearch(opts: {
     field_labels: content.field_labels,
     via: "mcp",
   };
+}
+
+export async function mcpDbOutput(opts: {
+  dbname: string;
+  query: QueryObject;
+  viewType?: string;
+}): Promise<Record<string, unknown>> {
+  const query: QueryObject = { ...opts.query };
+  if (opts.viewType && opts.viewType !== "eslist") {
+    query.view_type = opts.viewType;
+  }
+  const content = (await yaohaiPost("/g/mcp/yaohai/output", {
+    dbname: opts.dbname,
+    query,
+    action: "output",
+  })) as Record<string, unknown>;
+  return { ...content, via: content.via ?? "mcp_oss" };
 }
 
 export async function mcpDbDetail(
@@ -420,7 +442,14 @@ export async function listSearch(opts: {
   if (Array.isArray(items)) {
     for (const it of items) {
       if (it && typeof it === "object") {
-        stripMcpFields(it as Record<string, unknown>, { dbname: opts.dbname });
+        const row = it as Record<string, unknown>;
+        stripMcpFields(row, { dbname: opts.dbname });
+        if (opts.dbname === "product_cn" || opts.dbname === "reg_cn") {
+          attachAtcLetter(row);
+        }
+        if (typeof row.detail_url === "string" && !usableDetailUrl(row.detail_url)) {
+          delete row.detail_url;
+        }
       }
     }
   }
@@ -504,11 +533,19 @@ export async function fetchFacets(opts: {
     }
     const data = isRecord(result.content) ? result.content : {};
     const list = data.list;
+    const items = parseFacetList(list, field).map((item) => ({
+      ...item,
+      value: formatFacetValue(item.value, meta.filter_type),
+    }));
     distributions[field] = {
       success: true,
       title: meta.title,
-      filter_type: data.type ?? meta.filter_type,
-      items: parseFacetList(list, field),
+      filter_type: meta.filter_type,
+      items,
+      truncated: items.length >= 100,
+      ...(items.length >= 100
+        ? { hint: "Exactly 100 buckets usually means the long tail was cut. Pass query.maxSize (e.g. 500) to see more." }
+        : {}),
     };
   }
 
@@ -521,4 +558,25 @@ export async function fetchFacets(opts: {
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+
+/** Date facets come back as epoch milliseconds; expose YYYY-MM-DD (UTC). */
+export function formatFacetValue(
+  value: unknown,
+  filterType: FacetField["filter_type"]
+): unknown {
+  if (filterType !== "date") {
+    return value;
+  }
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n) || n <= 0) {
+    return value;
+  }
+  if (n > 1e11) {
+    return new Date(n).toISOString().slice(0, 10);
+  }
+  if (n > 1e9) {
+    return new Date(n * 1000).toISOString().slice(0, 10);
+  }
+  return value;
 }

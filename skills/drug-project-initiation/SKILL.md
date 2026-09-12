@@ -2,11 +2,12 @@
 name: drug-project-initiation
 description: >-
   药品立项调研报告：仿制/改良立项、可行性评估、FTO 专利自由实施、竞争格局、市场准入。
-  Produces a print-ready A4 HTML due-diligence report for a drug product: collects
-  evidence from the 63 DrugSea databases via the `user-drugsea` MCP namespace, scores
-  the variety on three independent probabilities (可获批 / 可合法上市 / 值得做), draws
-  ECharts figures, and assembles 封皮 / 目录 / 正文 / 参考文献 / 封底. Use when the user
-  asks for 立项调研、立项报告、品种可行性、能不能仿、专利到期能不能做、竞争格局分析，
+  Produces a print-ready A4 HTML due-diligence report for a drug product: pulls
+  chemical identity and 2D structure from PubChem, collects evidence from the 63
+  DrugSea databases via the `user-drugsea` MCP namespace, scores the variety on three
+  independent probabilities (可获批 / 可合法上市 / 值得做), draws ECharts figures, and
+  assembles 封皮 / 目录 / 正文 / 参考文献 / 封底. Use when the user asks for 立项调研、
+  立项报告、品种可行性、能不能仿、专利到期能不能做、竞争格局分析、化学结构/结构式，
   or names a drug and asks whether to start a program on it.
 ---
 
@@ -16,7 +17,7 @@ Three phases, in order. Do not skip Phase 1 and do not start writing prose befor
 Phase 2 produces numbers.
 
 ```
-Phase 1  采数   十个模块 M1–M10，全部走 user-drugsea MCP
+Phase 1  采数   M0 PubChem 化学/结构式 + M1–M10 DrugSea
 Phase 2  打分   三概率 P1/P2/P3 + 立项综合分 + 情景分析
 Phase 3  成稿   A4 打印就绪 HTML，浏览器逐页校验
 ```
@@ -31,13 +32,24 @@ Phase 3  成稿   A4 打印就绪 HTML，浏览器逐页校验
    医保身份以 `yibao` + `nhsa_code` 为准）。冲突本身要写进报告。
 4. **锚定日期。** 报告首页必须标明数据截止日；所有「到期」「执行期」类结论都要带具体日期。
 
-## Phase 1 — 采数（M1–M10）
+## Phase 1 — 采数（M0 + M1–M10）
 
-一律通过 `user-drugsea` MCP；路由与字段键查 `skills/drugsea/SKILL.md` 及其 `reference/db-*.md`。
+**M0（化学身份与结构式）先于或并行于 DrugSea。** 用 PubChem PUG-REST，不要用手绘/AI 结构式：
+
+```bash
+python3 skills/drug-project-initiation/scripts/fetch_chem_info.py <English INN> \
+  --out-dir reports/_chem/<slug>
+```
+
+产出 `chem_info.json` + `structure.png`，写入第三章「品种基础档案」的化学标识表与结构图。
+细则见 [reference/pubchem.md](reference/pubchem.md)。
+
+M1–M10 一律通过 `user-drugsea` MCP；路由与字段键查 `skills/drugsea/SKILL.md` 及其 `reference/db-*.md`。
 可并行发起同一模块内的多个查询。
 
 | 模块 | 要回答的问题 | 主要库 |
 |---|---|---|
+| M0 化学与结构 | CID/CAS/分子式/MW/IUPAC/SMILES/InChI + 2D 结构图 | **PubChem**（脚本） |
 | M1 品种身份 | 通用名/商品名/文号/持证商/剂型规格/ATC/包装 | `product_cn`、`product_jp`、`nhsa_code` |
 | M2 参比与路径 | 参比批次编号规格来源、过评数、BE 数、申报类别 | `cn_reference_drugs`、`generic_cn`、`yzpj_products` |
 | M3 申报竞争 | 4 类受理号、企业清单、首仿标记、状态/剂型分面 | `reg_cn`、`ct_cn` |
@@ -54,7 +66,8 @@ Phase 3  成稿   A4 打印就绪 HTML，浏览器逐页校验
 4.1 类（应被宣告无效）、4.2 类（不应登记）。
 
 采数的库特异性陷阱（限流、字段别名、占位日期等）见
-[reference/data-collection.md](reference/data-collection.md)。**首次使用必读**，
+[reference/data-collection.md](reference/data-collection.md)。PubChem 用法见
+[reference/pubchem.md](reference/pubchem.md)。**首次使用必读**，
 其中的坑会静默返回错误结果而不报错。
 
 ## Phase 2 — 打分

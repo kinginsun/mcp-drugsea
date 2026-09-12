@@ -14,6 +14,11 @@ DrugSea exposes 63 pharmaceutical databases. All of them are reachable through t
 database to hit, which field keys to use, and what value shape each field accepts.
 There are no scripts to run.
 
+When this workspace is `mcp-drugsea`, the Yaohai SPA and PHP API live in the gitignored
+symlink `drugsea_frontend_and_backend/` (`frontend/` + `backend/`). Prefix every
+`frontend/…` / `backend/` path in this skill with that directory and read the files
+there; they are not in this MCP repo.
+
 ## Golden rule: you are the router
 
 **Do not use `yaohai-smart-search`.** That tool's auto-router is deprecated for this
@@ -34,16 +39,16 @@ If you are unsure which database to use, call `yaohai-catalog` (optionally with
 | MCP tool | Use for | Key args |
 |---|---|---|
 | `yaohai-catalog` | Discover a `dbname`; confirm category / keywords | `category?`, `q?` |
-| `yaohai-global-search` | Cross-database drug panorama (`global_search`) | `q`, `query?`, `limit` (≤50) |
-| `product-cn-search` | **Marketed** China drugs (批准文号 / 国药准字) | `query`, `limit` (≤100), `offset`, `view_type?` |
+| `yaohai-global-search` | Cross-database drug panorama (`global_search`) | `q`, `query?`, `limit` (≤50), `action=output` |
+| `product-cn-search` | **Marketed** China drugs (批准文号 / 国药准字) | `query`, `limit` (≤100), `offset`, `view_type?`, `action=output` |
 | `product-cn-fields` | Field keys for `product_cn` | — |
 | `product-cn-facets` | Facet distributions for `product_cn` | `query?`, **`facets` (required)** |
-| `product-cn-detail` | One `product_cn` record | `id` (encrypted, from search items) |
-| `reg-cn-search` | **Pipeline** / CDE registration & review | `query`, `limit` (≤100), `offset`, `view_type?` |
+| `product-cn-detail` | One `product_cn` record | `id` (encrypted preferred; 批准文号 fallback) |
+| `reg-cn-search` | **Pipeline** / CDE registration & review | `query`, `limit` (≤100), `offset`, `view_type?`, `action=output` |
 | `reg-cn-fields` | Field keys for `reg_cn` | — |
 | `reg-cn-facets` | Facet distributions for `reg_cn` | `query?`, **`facets` (required)** |
-| `reg-cn-detail` | One `reg_cn` record | `id` (encrypted) |
-| `yaohai-search` | Any of the other 60 databases | **`dbname`**, `query`, `limit` (≤50), `offset` |
+| `reg-cn-detail` | One `reg_cn` record | `id` (encrypted preferred; 受理号 fallback) |
+| `yaohai-search` | Any of the other 60 databases | **`dbname`**, `query`, `limit` (≤50), `offset`, `action=output` |
 | `yaohai-facets` | Facet distributions for **58** databases (`/in` + dedicated-route 条件筛选) | `dbname`, `fields?`, `query?` |
 | `yaohai-detail` | One record from any database | `dbname`, `id` |
 | ~~`yaohai-smart-search`~~ | **Do not use** — route yourself | — |
@@ -189,7 +194,7 @@ For "what's the competitive landscape of X", query **both** and say which came f
 | 中药饮片医保 | `nhsa_herbs` | [db-access-sales.md](reference/db-access-sales.md) |
 | 医疗机构制剂 | `nhsa_hospital_prepration` | [db-access-sales.md](reference/db-access-sales.md) |
 | 国家集采中选结果 | `jicai` | [db-access-sales.md](reference/db-access-sales.md) |
-| 集采目录 / 品种 | `jicai_mulu` | [db-access-sales.md](reference/db-access-sales.md) |
+| 国家与地方集采目录 / 品种 | `jicai_mulu` | [db-access-sales.md](reference/db-access-sales.md) |
 | 招标中标 (挂网价) | `zhaobiao` | [db-access-sales.md](reference/db-access-sales.md) |
 | 医院销售 | `sales_cn` | [db-access-sales.md](reference/db-access-sales.md) |
 | 全球年报销售额 | `sales_global` | [db-access-sales.md](reference/db-access-sales.md) |
@@ -273,6 +278,12 @@ is capped at 1000 for one set of filters — changing `offset` never unlocks mor
 When you hit the edge, narrow the filters (date / province / ATC / enterprise) and
 re-query; each new condition gets its own window.
 
+**Excel export (`action=output`):** first search and read `total`. If `total` is
+1–999, call the same search tool again with `action: "output"`. The backend counts
+again, generates xlsx through the list API (`action=output`), uploads it to OSS, and
+returns `download_url` (plus `oss_url`). It never streams a binary file. If
+`total ≥ 1000`, narrow the query instead of exporting. Give the user the OSS link.
+
 ## Standard workflow
 
 1. Route (tables above) → pick `dbname` + tool.
@@ -287,8 +298,9 @@ re-query; each new condition gets its own window.
 5. Search. Read `total`.
 6. If `total > 20`, do **not** dump the table — follow
    [result-presentation.md](reference/result-presentation.md).
-7. Drill down with the detail tool only when the user needs one record. `id` must
-   be the encrypted id from the search items, never a raw 批准文号 / 受理号.
+7. Drill down with the detail tool only when the user needs one record. Prefer the
+   encrypted `id` from search items. A raw 批准文号 / 受理号 is accepted as a
+   fallback and resolves the same record.
 8. When the result carries a frontend link, include it so the user can verify.
 
 ## Gotchas
@@ -332,25 +344,25 @@ re-query; each new condition gets its own window.
   `herb_formulas`, `herbs`.
 - **`yaohai-search` with `dbname=product_cn` or `dbname=reg_cn` is a mistake** when the
   dedicated tools apply — they add view types, facets and field discovery.
-- **Unknown field keys are silently dropped — this is the most dangerous gotcha.**
-  A query of `{"bogus_field": "阿托伐他汀"}` returns HTTP 200 with `total` equal to the
-  **entire database** (243,104 rows for `product_cn`) and no error at all. Always
-  confirm your field key exists (via `*-fields` or the reference file), and sanity-check
-  that `total` dropped after adding a filter.
+- **Unknown field keys: fixed on MCP.** Aliases are rewritten (`query_aliases`), leftover
+  unknown keys are listed in `query_ignored`, and a query whose **every** user filter
+  key is unknown **errors** instead of returning the whole database. The web list APIs
+  still silent-drop. If an old session still returns 243k rows for `bogus_field`,
+  **reload the MCP server**.
 - **`zhaobiao` is Elasticsearch (`/es/zhaobiao/list`), not MySQL.** Keyword keys
   match the SPA panel: `item`, `category`, `drug_name`, `manufacture`, `auth_num`,
-  `dosage_form`, `specification`, `quality_level`, `switch`, `bid_price`. Sending
-  `company` is silently dropped (full ~4.6M rows) — use `manufacture`.
+  `dosage_form`, `specification`, `quality_level`, `switch`, `bid_price`. Prefer
+  `manufacture`; MCP aliases `company` → `manufacture`.
 - **`sales_cn` keyword keys match the SPA panel:** `drug_name` (成分词),
   `xd_drug_name` (通用名), `company`, `xd_company`, `dosage_form`, `xd_dosage_form`,
-  `specification`, `xd_specification`. `item` and `product` are silently dropped.
+  `specification`, `xd_specification`. `item` and `product` are not keys.
   「精确查询」is `exact: 1`.
 - **`ct_cn` keyword keys match the SPA panel:** `item`, `PI`, `PI_company`, `title`,
-  `drug_name`, `study_sponsor`, `indication`, `register_num`. Sending `sponsor`
-  is silently dropped — use `study_sponsor`.
+  `drug_name`, `study_sponsor`, `indication`, `register_num`. Prefer `study_sponsor`;
+  MCP aliases `sponsor` → `study_sponsor`.
 - **`ct_global` keyword keys match the SPA panel:** `item`, `title`, `interventions`
-  (plural), `study_sponsor`, `identifier`. `intervention` / `sponsor` are silently
-  dropped. Names are English-only.
+  (plural), `study_sponsor`, `identifier`. MCP aliases `intervention` / `sponsor`.
+  Names are English-only.
 - **`reg_cn` keyword keys match the SPA panel:** `item`, `drug_name`（中文药名）,
   `enterprise`, `slh`, `indication`. `general_name` is not a keyword box. Default
   `rows_excluded=1`（排除备案）and `search_mode=1`（相关搜索）.
@@ -361,8 +373,9 @@ re-query; each new condition gets its own window.
   （不是 `company`）, `indication`, `brand_name`, `auth_num`.
 - **`product_cn` keyword keys match the SPA panel:** `item`, `drug_name`（中文药名）,
   `manufacture`, `license_holder`, `specification`（原始规格）, `std_specification`,
-  `auth_num`, `indication`. `general_name_cn` is not a keyword box. 「仅有效文号」
-  is `only_active=1`; default `search_mode=3`.
+  `auth_num`, `brand_name`, `indication`. `general_name_cn` is not a keyword box.
+  「仅有效文号」is `only_active=1`; default `search_mode=3`. `in_sfda=0` on eslist
+  returns invalid approvals. ATC letters include **Z=中药（非 WHO）** and **W=原料药**.
 - **`china_new_drugs` keyword keys match the SPA panel:** `drug_name`（中英文药品名称/商品名）,
   `enterprise`, `slh`, `indication`. No `item` box.
 - **Malformed ranges do the opposite: they hard-error with HTTP 400.**
@@ -371,10 +384,9 @@ re-query; each new condition gets its own window.
   matched nothing.
 - **`gj_passed_yizhi` is a virtual OR filter** on `product_cn`: it matches
   `is_passed_yizhi=1 OR is_orange_book=1`. It does not exist as a stored field.
-- **`detail_url` inside `product-cn-search` / `reg-cn-search` items is
-  `https://db.drugsea.cn/api/disabled`** — it is not a usable link. Use the detail tool
-  with the item's `id` instead. `yaohai-search` and `yaohai-global-search` do return
-  working `detail_url` values.
+- **`detail_url` containing `/api/disabled` is not usable** — ignore it and call the
+  detail tool with the item's `id` (encrypted preferred; 批准文号 / 受理号 as fallback).
+  `yaohai-search` and `yaohai-global-search` return working `detail_url` values.
 - **Attachments (附件) in `yaohai-detail`** — the `attachments` field is a
   semicolon-separated string. Each attachment has these segments (in order):
   `file_hash; file_id; filename; original_source_url; file_extension; dp2_attachments_path`.
@@ -398,7 +410,7 @@ re-query; each new condition gets its own window.
 
 | File | Contents |
 |---|---|
-| [reference/query-syntax.md](reference/query-syntax.md) | Value type → ES clause, `search_mode` per DB, date/range grammar, caps, silent-drop |
+| [reference/query-syntax.md](reference/query-syntax.md) | Value type → ES clause, `search_mode` per DB, date/range grammar, caps, MCP ignored-keys |
 | [reference/atc-therapeutic-classes.md](reference/atc-therapeutic-classes.md) | ATC first-level letters ↔ therapeutic areas, disease → letter mapping |
 | [reference/db-core.md](reference/db-core.md) | `global_search`, `product_cn`, `reg_cn`, `ct_cn`, `ct_global` — full field/facet detail |
 | [reference/db-marketed.md](reference/db-marketed.md) | 上市情报 international (US/EU/UK/JP/CA/TW/HK/Macau) — 14 DBs |

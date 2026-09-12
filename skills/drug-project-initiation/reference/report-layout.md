@@ -31,6 +31,27 @@
 | `tr.tot` | 合计/关键行，加底色加粗 |
 | `ol.ref` | 参考文献，自动编号 `[1]` 悬挂缩进 |
 | `.chart` | 图容器，默认 60mm；`.short` 50mm、`.mid` 70mm、`.tall` 82mm |
+| `.chem` | 化学身份两栏：左结构式、右标识表（第三章必用） |
+| `img.struct` | PubChem 2D 结构式；限制高度约 55mm，避免撑破一页 |
+
+## 化学身份块（第三章）
+
+```html
+<div class="chem">
+  <div class="chem-fig">
+    <div class="cap">图 3-1　化学结构式（2D）</div>
+    <img class="struct" src="../_chem/{{slug}}/structure.png" alt="{{INN}} structure">
+    <p class="src">来源：PubChem CID {{cid}}，检索日 {{YYYY-MM-DD}}</p>
+  </div>
+  <div class="chem-tbl">
+    <div class="cap">表 3-1　化学标识（PubChem）</div>
+    <table>… CID / CAS / 分子式 / MW / IUPAC / InChIKey / SMILES …</table>
+  </div>
+</div>
+```
+
+长 SMILES / InChI 用 `td.mono`（等宽小字、可折行），不要为塞进一页而截断键值。
+数据来自 `fetch_chem_info.py` 的 JSON，照录。
 
 ## 排版硬约束
 

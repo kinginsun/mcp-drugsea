@@ -1,0 +1,24 @@
+---
+description: 药海前后端源码在 drugsea_frontend_and_backend（本地 symlink），查 SPA/API 时读那里
+alwaysApply: true
+---
+
+# DrugSea frontend / backend source
+
+This MCP repo is the tool server only. The Yaohai SPA and PHP API are **not** in `src/`.
+
+When you need to inspect 药海 implementation (条件筛选, `queryKey`, routes, ES/SQL helpers), read:
+
+`drugsea_frontend_and_backend/`
+
+That path is a gitignored symlink to the DrugSea monorepo. Paths in `skills/drugsea/` that start with `frontend/` or `backend/` are relative to it — prefix them:
+
+- SPA 条件筛选 (`/in/*`): `drugsea_frontend_and_backend/frontend/src/routes/more/DBS/components/commonSearch/ConditionSearchPanel.js`
+- 随心汇 `drugreg_cn`: `drugsea_frontend_and_backend/frontend/src/routes/more/aggs/config/data.js`
+- ES query builder: `drugsea_frontend_and_backend/backend/drugsea_api/src/functions_from_core.php` (`make_es_condtions`)
+- `product_cn`: `drugsea_frontend_and_backend/backend/drugsea_api/src/routes/products/bj_api2.php`
+- `reg_cn`: `drugsea_frontend_and_backend/backend/drugsea_api/src/routes/china_reg/qy2.php`
+
+If the symlink is missing, say so. Do not invent frontend/backend from this package.
+
+This tree is **not** in this repo's `graphify-out/`. Read/Grep it directly.

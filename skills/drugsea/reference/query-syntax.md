@@ -59,32 +59,20 @@ Elasticsearch accepts date values in `yyyy-MM-dd HH:mm:ss || yyyy-MM-dd || epoch
 
 **A 400 error means your syntax was wrong.** It does not mean "no matches".
 
-## The real silent failure: unknown field keys
+## Unknown field keys (web still silent; MCP is explicit) {#the-real-silent-failure-unknown-field-keys}
 
-This is the most dangerous behaviour in the API and it is easy to miss.
+The **web list APIs** still skip unknown keys inside `make_es_condtions()` and can fall
+back to `match_all` (the whole database, HTTP 200). That is unchanged for the SPA.
 
-`make_es_condtions()` wraps everything in `if (isset($mapping[$k]))`. Any key that is not
-in the database's ES field mapping is **skipped without warning**. If every key you sent is
-unknown, the function falls back to `match_all` and returns **the entire database** with
-HTTP 200.
+**MCP search does not.** mcp-drugsea (and the Yaohai MCP route after deploy) rewrite
+known aliases (`sponsor` → `study_sponsor`, `substance` → `active_substance`, …),
+echo `query_aliases` / `query_ignored` / `warnings`, and **error** if every user filter
+key is unknown. A call like `{"bogus_field_xyz": "阿托伐他汀"}` must fail — it must not
+return 243k rows.
 
-Verified against `product_cn`:
-
-```json
-// Request
-{"query": {"bogus_field_xyz": "阿托伐他汀"}}
-
-// Response — 200 OK, no error
-{"total": 243104, "query_applied": {"bogus_field_xyz": "阿托伐他汀", "search_mode": "3"}}
-```
-
-243,104 rows is the whole China marketed-drug database. The misspelled field was simply
-ignored, and the echo of `query_applied` makes it look like the filter was honoured.
-
-**Defence:** after any search, sanity-check that `total` actually dropped. If you added a
-filter and `total` is suspiciously large or unchanged, your field key is wrong. Confirm
-keys with `product-cn-fields` / `reg-cn-fields` or the `db-*.md` reference file before
-trusting a result.
+If an old session still silent-drops unknown keys, **reload the MCP server**. Confirm
+keys with `product-cn-fields` / `reg-cn-fields` or the `db-*.md` files. After a
+successful search, still check that `total` dropped when you added a real filter.
 
 ### But the field lists are not exhaustive either
 
@@ -92,19 +80,19 @@ Three different "authoritative" sources disagree, and **all of them are incomple
 
 | Source | What it lists | Gap |
 |---|---|---|
-| MCP `product-cn-fields` `common_search` | the 11 keys the search UI exposes | omits real ES keys like `brand_name` |
+| MCP `product-cn-fields` `common_search` | the keyword-panel keys plus verified extras such as `brand_name` | still omits some ES-only keys |
 | catalog `search_fields` | 3–5 headline keys per database | omits `item` on many databases where `item` works |
 | the database's ES mapping | every accepted key | not exposed through any tool |
 
-Verified: `brand_name` is **not** in `product-cn-fields`' `common_search`, yet
-`{"brand_name": "立普妥"}` returns 62 rows — a real, precise filter. So a key missing from
-the docs is not proof the key is invalid.
+Verified: `{"brand_name": "立普妥"}` returns 62 rows. A key missing from a short catalog
+list is not proof the key is invalid — but an **unknown** key on MCP must error, not
+return the whole database.
 
 The reliable test is behavioural. Send the key and read `total`:
 
 | `total` | Meaning |
 |---|---|
-| equals the unfiltered database size | key was **silently dropped** — try another key |
+| equals the unfiltered database size | filter did not apply (wrong key on the web API, or only control keys left) — try another key |
 | smaller than the full size | key is **valid**, and it filtered |
 | `0` | key is valid but the **value** matched nothing (wrong language, wrong form) |
 | HTTP 400 | value is **malformed** for that field's type |
@@ -118,11 +106,13 @@ Because the docs under-report, prefer keys you have seen work. The per-database
 applied **before** the query is built and rewrites which field key your keyword targets and
 whether the value is a string or an array. It is not a match-type switch.
 
-**Pass `search_mode` inside the `query` object**, not as a top-level tool argument:
+**Pass `search_mode` inside the `query` object.** A top-level `search_mode` is now
+hoisted into `query` when the query omits it (mcp-drugsea ≥ this release). Prefer
+the in-query form so older servers still work:
 
 ```jsonc
 {"query": {"drug_name": "甲磺酸奥希替尼片", "search_mode": 2}, "limit": 20}   // ✓
-{"query": {"drug_name": "甲磺酸奥希替尼片"}, "search_mode": 2, "limit": 20}   // ✗ ignored
+{"query": {"drug_name": "甲磺酸奥希替尼片"}, "search_mode": 2, "limit": 20}   // hoisted
 ```
 
 | `search_mode` | UI label | What it does to `drug_name` |
@@ -188,7 +178,7 @@ These are applied by the route handlers, not by you:
 | `slh` (`reg_cn`) | Same `;` splitting. Multi-acceptance-number search in one call. |
 | `source` (`product_cn`) | Always coerced to an array → `terms`. Values are codes `G` (国产) / `J` (进口), but the **facet response returns readable labels** (`国产` / `进口`). Send the label. |
 | `only_active=1` (`product_cn`) | Sets `in_sfda=1`, overriding anything you passed for `in_sfda`. |
-| `in_sfda=0` (`product_cn`) | The filter is **removed** — you cannot ask for invalid approvals only. Omit the field instead. |
+| `in_sfda=0` (`product_cn`) | **Honoured on the default `eslist` search** (invalid approvals only). Facet aggregations and `list_by_drug_name` / `list_by_manufacture` still drop `in_sfda=0`. |
 | `rows_excluded` (`reg_cn`) | Empty/falsy values are dropped. Send `1` to exclude 备案, `0` to include. |
 | `gj_passed_yizhi=1` (`product_cn`) | **Virtual OR field**, not stored: matches `is_passed_yizhi=1 OR is_orange_book=1`. Verified: 阿托伐他汀 → 117 rows. |
 
@@ -208,25 +198,21 @@ Facets use the same `query` object as the search, with two differences:
    you can see the full distribution of that dimension rather than only the value you
    already filtered to. Other filters still apply. (`fetchFacets` does
    `delete facetQuery[field]` per field.)
-2. The response `filter_type` is **always `"multiple"`**, regardless of the field's real
-   type. Date facets come back as epoch milliseconds, range facets as raw numbers.
-   `yaohai-facets` cannot return date or range facets at all — its catalog is terms-only —
-   so this only bites on the two dedicated tools. Verified live 2026-09-06 on
-   `product-cn-facets` with `["first_approve_date", "general_name_count", "ATC_code"]`: all
-   three report `filter_type: "multiple"`. There is **no `type` key** in the payload —
-   don't look for one.
+2. MCP facets use the **catalog** `filter_type` (the raw backend payload still hard-codes
+   `type=multiple`). Date buckets are formatted as `YYYY-MM-DD` (UTC). When a terms
+   aggregation returns 100 buckets, the field is marked `truncated: true` — raise
+   `query.maxSize` if you need the long tail. `yaohai-facets` is still **terms-only**.
 
-### `yaohai-facets` throws where search silently drops
-
-This asymmetry is worth internalizing, because the two tools fail in opposite directions:
+### `yaohai-facets` throws; MCP search no longer silent-drops
 
 | | Unknown field key |
 |---|---|
-| `yaohai-search` | **silently dropped** → HTTP 200, `total` = whole database |
-| `yaohai-facets` | **throws** → `Unknown facet field(s) for yibao: item, bogus. Valid fields: province, drug_type, insurance_level, std_catalog_version.` |
+| `yaohai-search` / dedicated search (MCP) | **errors** if every user filter key is unknown; otherwise `query_ignored` |
+| Web list API | still **silently dropped** → HTTP 200, `total` = whole database |
+| `yaohai-facets` | **throws** → `Unknown facet field(s) for yibao: item, bogus. Valid fields: …` |
 
-So a facet call is the *cheap* way to validate a field name before you trust a search
-result: if it throws, the error message hands you the valid list.
+A facet call is still a cheap way to list valid facet field names. For search keys, rely
+on `*-fields`, the `db-*.md` files, and the MCP error / `query_ignored` echo.
 
 Related errors, all of them loud:
 
@@ -420,7 +406,12 @@ pickers are still not fetchable. `product_cn` / `reg_cn` keep dedicated tools.
 | `yaohai-global-search` | 10 | 50 | clamped, not errored |
 
 `offset` is clamped to `>= 0` and truncated to an integer. Passing `limit: 5000` silently
-becomes the max — it does not fail.
+becomes the max — it does not fail. Responses echo `limit_requested` / `limit` /
+`max_retrieve` when a clamp happened.
+
+**1000-row window per query condition:** `offset + limit` cannot exceed 1000. An
+`offset` already at or past 1000 is rejected. Narrow the filters instead of paging
+deeper. The same cap is enforced by the MCP client and the Yaohai MCP API.
 
 Total match count is `total` in the MCP response (the raw backend field is `tnum`).
 
@@ -532,11 +523,11 @@ Use `field_labels` to label output columns rather than guessing translations.
 | Tool | `detail_url` |
 |---|---|
 | `yaohai-search`, `yaohai-global-search` | working API URL |
-| `product-cn-search`, `reg-cn-search` | `https://db.drugsea.cn/api/disabled` — **not usable** |
+| `product-cn-search`, `reg-cn-search` | rebuilt when possible; ignore any URL containing `/api/disabled` |
 
-For `product_cn` / `reg_cn`, drill down with `product-cn-detail` / `reg-cn-detail` using
-the item's `id` (an encrypted string like `irzQMmzjVihRxUrrbc-vtw**`). Never pass a raw
-批准文号 or 受理号 as `id`.
+For `product_cn` / `reg_cn`, drill down with `product-cn-detail` / `reg-cn-detail`.
+Prefer the item's encrypted `id` (e.g. `irzQMmzjVihRxUrrbc-vtw**`). A raw 批准文号 or
+受理号 is accepted as a fallback and resolves the same record.
 
 ## Quick pre-flight checklist
 
@@ -544,4 +535,5 @@ the item's `id` (an encrypted string like `irzQMmzjVihRxUrrbc-vtw**`). Never pas
 2. Is the value the right shape — string for fuzzy, `string[]` for exact enumerated?
 3. Are dates `YYYY-MM-DD` and ranges `min to max` with literal ` to `?
 4. Did I set `search_mode` explicitly if comparing `product_cn` and `reg_cn`?
-5. Did `total` drop after adding my filter? If not, a key was silently dropped.
+5. Did `total` drop after adding my filter? If not, the key did not apply (or MCP
+   returned `query_ignored`). Reload the MCP server if unknown keys still silent-drop.

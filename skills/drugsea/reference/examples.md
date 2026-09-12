@@ -22,7 +22,7 @@ auto-router.
 {"query": {"item": "阿托伐他汀"}, "limit": 20}
 ```
 
-→ `total: 277`. Rows are individual approvals (批准文号), not molecules.
+→ `total` ≈ 279 (use the live `total`; counts drift). Rows are individual approvals (批准文号), not molecules.
 
 Then get the shape before presenting:
 
@@ -32,9 +32,9 @@ Then get the shape before presenting:
  "facets": ["ATC_code", "drug_type", "std_dosage_form", "national_yibao", "is_guojia_jicai"]}
 ```
 
-→ ATC `C` (277), 化学药品 (277), and `national_yibao` spanning 国乙2009版–国乙2025版.
+→ ATC `C` (~279), 化学药品 (~279), and `national_yibao` spanning 国乙2009版–国乙2025版.
 
-**Present.** 277 > 20, so lead with the breakdown and 5–10 sample rows. See
+**Present.** `total` > 20, so lead with the breakdown and 5–10 sample rows. See
 [result-presentation.md](result-presentation.md).
 
 ---
@@ -276,11 +276,11 @@ in what they require.
 ```jsonc
 {"dbname": "product_eu", "query": {"active_substance": "Osimertinib"}, "limit": 20}  // → 1 ✓
 {"dbname": "product_eu", "query": {"active_substance": "阿托伐他汀"}, "limit": 20}    // → 0 ✗
-{"dbname": "product_eu", "query": {"substance": "atorvastatin"}, "limit": 20}         // → 2661 = whole DB ✗
+{"dbname": "product_eu", "query": {"substance": "atorvastatin"}, "limit": 20}         // MCP aliases to active_substance
 ```
 
-The catalog lists `substance` as a search field but the backend reads `active_substance` —
-`substance` is silently dropped. ATC filtering works with a letter: `{"ATC_code": "L"}` → 674.
+Prefer `active_substance` (English). MCP aliases `substance`. ATC filtering works with a
+letter: `{"ATC_code": "L"}` → 674.
 
 ---
 
@@ -325,7 +325,7 @@ Cross-check in the dedicated database:
 ```
 
 `gj_passed_yizhi=1` matches `is_passed_yizhi=1 OR is_orange_book=1` — it is not a stored
-column. That is why 117 < 277: only the passed/orange-book subset.
+column. That is why 117 < ~279: only the passed/orange-book subset.
 
 For the variety-level rollup:
 
@@ -337,15 +337,10 @@ For the variety-level rollup:
 Rows carry `yzpj_passed` (已过评), `yzpj_not_passed`, `listing_num`, `jicai_num`,
 `reference_drug_num`.
 
-**`generic_cn` only supports `drug_name` reliably.** `enterprise` is silently dropped
-(returns all 3,823 varieties) and `manufacture` throws a real SQL error:
-
-```
-SQLSTATE[42S22]: Column not found: 1054 Unknown column 'manufacture' in 'where clause'
-```
-
-For "company X's consistency-evaluation products", use `product_cn` with `manufacture`
-plus `is_passed_yizhi` instead.
+**`generic_cn` has no company column.** Usable keys are `drug_name` and `dosage_form`.
+`enterprise` / `manufacture` are rejected (MCP) or ignored — they must not return the
+whole catalogue or a SQL dump. For "company X's consistency-evaluation products", use
+`product_cn` with `manufacture` plus `is_passed_yizhi` instead.
 
 ---
 
@@ -470,10 +465,10 @@ confirm with a filtered `yaohai-search` and cite `total`. See
 [result-presentation.md](result-presentation.md).
 
 **What would go wrong here.** Passing a search-only key like `item` in `fields` **throws**
-(`Unknown facet field(s) for jicai: item. Valid fields: …`) — the opposite of search, where
-an unknown key is silently dropped and returns the whole database. And `product_cn` /
-`reg_cn` are *not* in this tool's catalog: they return `supported: false` with a hint
-pointing at `product-cn-facets` / `reg-cn-facets`.
+(`Unknown facet field(s) for jicai: item. Valid fields: …`). MCP search now errors (or
+lists `query_ignored`) instead of returning the whole database. `product_cn` / `reg_cn`
+are *not* in this tool's catalog: they return `supported: false` with a hint pointing at
+`product-cn-facets` / `reg-cn-facets`.
 
 
 ## Keyword-preparation habits these examples share

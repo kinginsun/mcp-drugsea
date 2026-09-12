@@ -197,7 +197,7 @@ The other 2 are **filter-only** — valid in a `query`, but passing one in `fiel
 | Facets | `yaohai-facets` (6 fields) |
 | Detail | `yaohai-detail` |
 
-> **Use English names.** `active_substance` / `item` with a Chinese ingredient returns 0 rows; `Osimertinib` returns 1. The catalogue lists `substance` as a search field but the backend reads `active_substance` — `substance` is silently dropped and returns all 2,661 rows.
+> **Use English names.** `active_substance` / `item` with a Chinese ingredient returns 0 rows; `Osimertinib` returns 1. Catalog keys match the SQL: `manufacture` (not `company`) and `active_substance` (not `substance`). MCP aliases the old names.
 
 Real keys (from `make_ema_drugs_search_sql`): `drug_name`, `manufacture`, `brand_name`, `active_substance`, `product_number`, `exact`, `authorisation_date`, `drug_type`, `review_type`, `status`, `condition_approval`, `exceptional_circumstance`, `is_orphan`, `is_generic`, `biosimilar`, `year`, `ATC_code`.
 
@@ -206,8 +206,8 @@ Real keys (from `make_ema_drugs_search_sql`): `drug_name`, `manufacture`, `brand
 | Key | Verified | Label |
 |---|---|---|
 | `drug_name` | ✓ | 药品名称 |
-| `company` | | 企业名称 |
-| `substance` | ✗ broken | 活性成分 |
+| `manufacture` | | 企业名称 |
+| `active_substance` | ✓ | 活性成分 |
 
 ### Facet / filter fields
 
@@ -245,7 +245,7 @@ Real keys (from `make_ema_drugs_search_sql`): `drug_name`, `manufacture`, `brand
 {"query": {"ATC_code": "L"}, "limit": 20}
 ```
 
-**✗ WRONG — `substance` is not the key (it is `active_substance`); returns all 2,661 rows**
+**Alias.** MCP rewrites `substance` → `active_substance` (prefer the real key).
 
 ```jsonc
 {"query": {"substance": "atorvastatin"}, "limit": 20}

@@ -14,6 +14,7 @@ export const PRODUCT_CN_COMMON_FIELDS = [
   "std_specification",
   "auth_num",
   "indication",
+  "brand_name",
   "general_name_cn",
   "only_active",
   "search_mode",
@@ -100,7 +101,44 @@ export const REG_CN_DETAIL_PATH = "/b/drugreg/cn/detail";
 export const REG_CN_FACET_PREFIX = "/b/es/drugreg/cn/list";
 
 export const ATC_HINT =
-  "For disease/therapeutic-class queries prefer ConditionSearch ATC_code (letter): L=oncology, C=cardiovascular, J=anti-infectives, N=nervous system, R=respiratory, A=alimentary/metabolism (e.g. diabetes), H=hormones, G=genito-urinary, M=musculo-skeletal, D=dermatologicals, B=blood, S=sensory, P=antiparasitic, V=various.";
+  "For disease/therapeutic-class queries prefer ConditionSearch ATC_code (letter): L=oncology, C=cardiovascular, J=anti-infectives, N=nervous system, R=respiratory, A=alimentary/metabolism (e.g. diabetes), H=hormones, G=genito-urinary, M=musculo-skeletal, D=dermatologicals, B=blood, S=sensory, P=antiparasitic, V=various. DrugSea extensions (not WHO): Z=中药 (largest bucket), W=原料药, E=辅料.";
+
+/** List rows often store the Chinese class name in ATC_code; filters need the letter. */
+export const ATC_LETTER_BY_NAME: Record<string, string> = {
+  "消化道及代谢": "A",
+  "血液和造血器官": "B",
+  "心血管系统": "C",
+  "皮肤病用药": "D",
+  "辅料": "E",
+  "生殖泌尿系统和性激素": "G",
+  "非性激素和胰岛素类的激素类系统用药": "H",
+  "系统用抗感染药": "J",
+  "抗肿瘤药和免疫机能调节药": "L",
+  "肌肉-骨骼系统": "M",
+  "神经系统": "N",
+  "抗寄生虫药、杀虫药和驱虫药": "P",
+  "呼吸系统": "R",
+  "感觉器官": "S",
+  "杂类": "V",
+  "原料药": "W",
+  "中药": "Z",
+};
+
+export function attachAtcLetter(row: Record<string, unknown>): Record<string, unknown> {
+  const code = row.ATC_code;
+  if (typeof code !== "string" || code === "") {
+    return row;
+  }
+  if (/^[A-Z]$/.test(code)) {
+    row.ATC_letter = code;
+    return row;
+  }
+  const letter = ATC_LETTER_BY_NAME[code];
+  if (letter) {
+    row.ATC_letter = letter;
+  }
+  return row;
+}
 
 export function productCnSearchPath(viewType: string): string {
   if (viewType === "eslist") {

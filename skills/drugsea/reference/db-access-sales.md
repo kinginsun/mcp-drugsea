@@ -6,9 +6,9 @@ Insurance, essential-drug lists, procurement, tenders and sales volumes — the 
 
 ---
 
-## `jicai_mulu` — jicai_mulu
+## `jicai_mulu` — 国家与地方集采目录
 
-**Category** 其他 · **Route type** `dbs` · **Frontend** `/in/jicai_mulu` · **API path** `/jicai_mulu/eslist` · **Detail** yes
+**Category** 市场情报 · **Route type** `dbs` · **Frontend** `/in/jicai_mulu` · **API path** `/jicai_mulu/eslist` · **Detail** yes
 
 | MCP tool | |
 |---|---|
@@ -17,7 +17,7 @@ Insurance, essential-drug lists, procurement, tenders and sales volumes — the 
 | Facets | `yaohai-facets` (2 fields) |
 | Detail | `yaohai-detail` |
 
-> Procurement catalogue/variety list; pairs with `jicai` (the award results).
+> Procurement catalogue/variety list; pairs with `jicai` (the award results). Catalog title is **国家与地方集采目录**; keywords include 集采 / 集采目录 / 品种. `yaohai-catalog` with `q=集采` must list this database.
 
 ### Search fields
 
@@ -454,7 +454,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 
 > Tender/award (挂网价). **Elasticsearch** on `view_zhaobiao` via `/es/zhaobiao/list` — same `make_es_condtions()` grammar as other ES databases. Do not treat the `/list` suffix as MySQL; the leftover MySQL path `/zhaobiao/list` is not what MCP or the SPA use.
 >
-> Catalog `search_fields` match the SPA「关键词查询」panel: `item`, `category`, `drug_name`, `manufacture`, `auth_num`, `dosage_form`, `specification`, `quality_level`, `switch`, `bid_price`. **`company` is not a stored field** — it is silently dropped (full-DB `total`). Use `manufacture` for 企业名称. `province` is a facet filter, not a keyword box.
+> Catalog `search_fields` match the SPA「关键词查询」panel: `item`, `category`, `drug_name`, `manufacture`, `auth_num`, `dosage_form`, `specification`, `quality_level`, `switch`, `bid_price`. Prefer `manufacture` for 企业名称; MCP aliases `company` → `manufacture`. `province` is a facet filter, not a keyword box.
 
 Unfiltered size (2026-09-11): **4,598,529**.
 
@@ -487,7 +487,7 @@ Unfiltered size (2026-09-11): **4,598,529**.
 {"query": {"manufacture": "齐鲁"}, "limit": 20}
 ```
 
-**✗ WRONG — catalog key `company` is silently dropped; `total` stays 4,598,529**
+**Alias.** MCP rewrites `company` → `manufacture`. Prefer `manufacture`.
 
 ```jsonc
 {"query": {"company": "齐鲁"}, "limit": 20}

@@ -17,11 +17,18 @@ export const YaohaiCatalogSchema = z.object({
   q: z.string().optional(),
 });
 
+export const OutputActionSchema = z.literal("output");
+
+const HoistedFlagSchema = z.union([z.string(), z.number(), z.boolean()]);
+
 export const YaohaiSearchSchema = z.object({
   dbname: z.string().min(1),
   query: QueryObjectSchema.optional(),
+  search_mode: HoistedFlagSchema.optional(),
+  rows_excluded: HoistedFlagSchema.optional(),
   limit: z.coerce.number().int().optional(),
   offset: z.coerce.number().int().optional(),
+  action: OutputActionSchema.optional(),
 });
 
 export const YaohaiDetailSchema = z.object({
@@ -51,8 +58,10 @@ export const YaohaiFacetsSchema = z.object({
 export const YaohaiGlobalSearchSchema = z.object({
   q: z.string().optional(),
   query: QueryObjectSchema.optional(),
+  search_mode: HoistedFlagSchema.optional(),
   limit: z.coerce.number().int().optional(),
   offset: z.coerce.number().int().optional(),
+  action: OutputActionSchema.optional(),
 });
 
 export const ProductViewTypeSchema = z.enum([
@@ -69,9 +78,11 @@ export const RegViewTypeSchema = z.enum([
 
 export const ProductCnSearchSchema = z.object({
   query: QueryObjectSchema.optional(),
+  search_mode: HoistedFlagSchema.optional(),
   limit: z.coerce.number().int().optional(),
   offset: z.coerce.number().int().optional(),
   view_type: ProductViewTypeSchema.optional(),
+  action: OutputActionSchema.optional(),
 });
 
 export const ProductCnFacetsSchema = z.object({
@@ -85,9 +96,12 @@ export const ProductCnDetailSchema = z.object({
 
 export const RegCnSearchSchema = z.object({
   query: QueryObjectSchema.optional(),
+  search_mode: HoistedFlagSchema.optional(),
+  rows_excluded: HoistedFlagSchema.optional(),
   limit: z.coerce.number().int().optional(),
   offset: z.coerce.number().int().optional(),
   view_type: RegViewTypeSchema.optional(),
+  action: OutputActionSchema.optional(),
 });
 
 export const RegCnFacetsSchema = z.object({

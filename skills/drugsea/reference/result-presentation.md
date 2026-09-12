@@ -210,7 +210,7 @@ Full text belongs in a detail drill-down, not a list table.
 ### Small result set (≤ 20) — table
 
 ```markdown
-**阿托伐他汀钙片** — `product_cn`，`item=阿托伐他汀`，共 **277** 条，显示前 10 条：
+**阿托伐他汀钙片** — `product_cn`，`item=阿托伐他汀`，共 **约 279** 条（以 `total` 为准），显示前 10 条：
 
 | 药品名称 | 批准文号 | 生产企业 | 规格 | 首次上市 | 商品名 |
 |---|---|---|---|---|---|

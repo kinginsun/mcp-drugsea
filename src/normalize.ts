@@ -57,7 +57,54 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
-export function normalizeValue(v: unknown): unknown {
+const URL_FIELD_RE = /(_url|Url|URL)$/;
+const URL_FIELD_NAMES = new Set([
+  "source_url",
+  "detail_url",
+  "url",
+  "original_source_url",
+  "oss_url",
+  "download_url",
+]);
+const URL_LABELS = new Set(["原文链接", "详情", "查看", "链接", "附件", "下载"]);
+
+function looksLikeUrlField(field?: string): boolean {
+  if (!field) {
+    return false;
+  }
+  return URL_FIELD_NAMES.has(field) || URL_FIELD_RE.test(field);
+}
+
+function cellDisplayValue(
+  cell: Record<string, unknown>,
+  field?: string
+): unknown {
+  const url = cell.url;
+  const text = cell.text;
+  const preferUrl =
+    looksLikeUrlField(field) ||
+    (typeof text === "string" && URL_LABELS.has(text.trim()) && url);
+  if (preferUrl && url !== undefined && url !== null && url !== "") {
+    return normalizeValue(url, field);
+  }
+  if (text !== undefined) {
+    return normalizeValue(text, field);
+  }
+  return normalizeValue(url, field);
+}
+
+/** Drop list-cell placeholders such as https://db.drugsea.cn/api/disabled. */
+export function usableDetailUrl(url?: string): string | undefined {
+  if (!url) {
+    return undefined;
+  }
+  if (url.includes("/api/disabled") || /\/disabled\/?$/.test(url)) {
+    return undefined;
+  }
+  return url;
+}
+
+export function normalizeValue(v: unknown, field?: string): unknown {
   if (v === null || v === undefined) {
     return v;
   }
@@ -68,7 +115,7 @@ export function normalizeValue(v: unknown): unknown {
     const trimmed = v.trim();
     if (trimmed && (trimmed[0] === "[" || trimmed[0] === "{")) {
       try {
-        return normalizeValue(JSON.parse(trimmed));
+        return normalizeValue(JSON.parse(trimmed), field);
       } catch {
         // keep original string
       }
@@ -77,11 +124,11 @@ export function normalizeValue(v: unknown): unknown {
   }
   if (isPlainObject(v)) {
     if ("text" in v && !("0" in v)) {
-      return normalizeValue(v.text);
+      return cellDisplayValue(v, field);
     }
     const out: Record<string, unknown> = {};
     for (const [k, val] of Object.entries(v)) {
-      out[k] = normalizeValue(val);
+      out[k] = normalizeValue(val, k);
     }
     return out;
   }
@@ -90,8 +137,8 @@ export function normalizeValue(v: unknown): unknown {
     for (const part of v) {
       const t =
         isPlainObject(part) && "text" in part
-          ? normalizeValue(part.text)
-          : normalizeValue(part);
+          ? cellDisplayValue(part, field)
+          : normalizeValue(part, field);
       if (t === null || t === undefined || t === "") {
         continue;
       }
@@ -111,7 +158,7 @@ export function flattenRecord(record: Record<string, unknown>): Record<string, u
     if (k === "detail") {
       continue;
     }
-    out[k] = normalizeValue(v);
+    out[k] = normalizeValue(v, k);
   }
   return out;
 }

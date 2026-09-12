@@ -14,6 +14,7 @@ import {
   fetchFacets,
   listSearch,
   mcpDbDetail,
+  mcpDbOutput,
   mcpDbSearch,
   prefersMcpListApi,
   yaohaiPost,
@@ -50,6 +51,12 @@ import {
   YaohaiGlobalSearchSchema,
   YaohaiSearchSchema,
 } from "./types.js";
+import {
+  attachSearchMeta,
+  hoistQueryFlags,
+  limitMeta,
+  sanitizeQuery,
+} from "./query.js";
 import { DBS_FACET_CATALOG } from "./dbs-facets.js";
 import {
   checkForUpdate,
@@ -74,6 +81,9 @@ const PRESENTATION_HINT =
 
 const RETRIEVAL_CAP_HINT =
   "One distinct query condition can return at most 1000 rows total (offset+limit window cap, anti-scraping): paginate within that window, or narrow the filters (date / province / ATC / enterprise) to reach deeper slices — a too-large offset is rejected.";
+
+const OUTPUT_HINT =
+  "To export Excel: first search and read total; if total is 1–999, call again with action=output. The server counts first, generates xlsx via the list API, uploads it to OSS, and returns download_url (never binary). If total ≥ 1000, narrow the query instead.";
 
 const ROUTING_HINT =
   "Already-marketed China products (国药准字, 批准文号, 上市, 医保/集采) → product-cn-* tools. R&D / CDE pipeline (在研, 受理号, 审评, 尚未上市) → reg-cn-* tools. Other DBs (医保 yibao, 基药 jiyao, 集采 jicai, trials, global) → yaohai-*. Do not use yaohai-search with dbname product_cn or reg_cn when the dedicated tools apply.";
@@ -151,7 +161,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           "Use query fields from the catalog's search_fields. " +
           ROUTING_HINT +
           " " +
-          PRESENTATION_HINT,
+          PRESENTATION_HINT +
+          " " +
+          OUTPUT_HINT,
         inputSchema: {
           type: "object",
           properties: {
@@ -161,11 +173,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 "Database id, e.g. yibao, jiyao, jicai, jicai_mulu, fda_dmf. Prefer product-cn-search / reg-cn-search instead of product_cn / reg_cn.",
             },
             query: QUERY_PROP,
+            search_mode: {
+              type: "number",
+              description: "Optional. Hoisted into query.search_mode if query omits it (1/2/3).",
+            },
             limit: {
               type: "number",
               description: `Row cap (default ${YAOHAI_LIMIT_DEFAULT}, max ${YAOHAI_LIMIT_MAX})`,
             },
             offset: { type: "number", description: "Pagination offset (default 0); offset+limit is capped at 1000 rows per query condition" },
+            action: {
+              type: "string",
+              enum: ["output"],
+              description:
+                "Set to output to export the current query as Excel. Server returns an OSS download_url, not a binary file.",
+            },
           },
           required: ["dbname"],
         },
@@ -214,10 +236,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "yaohai-global-search",
         description:
-          "Global drug panorama search (global_search). Pass q as the search term, or query.term. " +
+          "Global drug panorama search (global_search). Use q or query.term / query.drug_name — item is not a key (it is rewritten to term). " +
+          "brand_name filters the trade-name column after the API fix; do not treat *_drug_num / *_ct_num as populated. " +
           RETRIEVAL_CAP_HINT +
           " " +
-          PRESENTATION_HINT,
+          PRESENTATION_HINT +
+          " " +
+          OUTPUT_HINT,
         inputSchema: {
           type: "object",
           properties: {
@@ -228,6 +253,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description: `Row cap (default ${YAOHAI_LIMIT_DEFAULT}, max ${YAOHAI_LIMIT_MAX})`,
             },
             offset: { type: "number", description: "Pagination offset (default 0); offset+limit is capped at 1000 rows per query condition" },
+            action: {
+              type: "string",
+              enum: ["output"],
+              description:
+                "Set to output to export the current query as Excel. Server returns an OSS download_url, not a binary file.",
+            },
           },
         },
       },
@@ -247,7 +278,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           RETRIEVAL_CAP_HINT +
           " " +
           "Not for R&D pipeline — use reg-cn-search. " +
-          PRESENTATION_HINT,
+          PRESENTATION_HINT +
+          " " +
+          OUTPUT_HINT,
         inputSchema: {
           type: "object",
           properties: {
@@ -255,7 +288,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               ...QUERY_PROP,
               description:
                 QUERY_PROP.description +
-                " Common: item, drug_name, manufacture, license_holder, specification, std_specification, auth_num, indication, general_name_cn, only_active (1), search_mode (1/2/3). Condition examples: ATC_code, national_yibao, std_dosage_form, source, first_approve_date.",
+                " Common: item, drug_name, brand_name, manufacture, license_holder, specification, std_specification, auth_num, indication, general_name_cn, only_active (1), search_mode (1/2/3). Condition examples: ATC_code, national_yibao, std_dosage_form, source, first_approve_date.",
+            },
+            search_mode: {
+              type: "number",
+              description: "Optional. Same as query.search_mode (1/2/3). Top-level value is merged into query if omitted there.",
             },
             limit: {
               type: "number",
@@ -266,6 +303,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               enum: [...PRODUCT_CN_VIEW_TYPES],
               description: "eslist (by approval, default), list_by_drug_name, list_by_manufacture",
+            },
+            action: {
+              type: "string",
+              enum: ["output"],
+              description:
+                "Set to output to export the current query as Excel. Server returns an OSS download_url, not a binary file.",
             },
           },
         },
@@ -293,7 +336,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "product-cn-detail",
         description:
-          "Detail for one product_cn row. id is the encrypted id from product-cn-search items (not the raw 批准文号).",
+          "Detail for one product_cn row. Prefer the encrypted id from product-cn-search items; a raw 批准文号 is accepted as a fallback.",
         inputSchema: {
           type: "object",
           properties: {
@@ -318,7 +361,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           RETRIEVAL_CAP_HINT +
           " " +
           "Not for already-marketed products — use product-cn-search. " +
-          PRESENTATION_HINT,
+          PRESENTATION_HINT +
+          " " +
+          OUTPUT_HINT,
         inputSchema: {
           type: "object",
           properties: {
@@ -327,6 +372,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description:
                 QUERY_PROP.description +
                 " Common: item, drug_name, enterprise, slh, indication, rows_excluded, search_mode. Condition examples: ATC_code, rd_status, transact_status, register_type, drug_type, undertake_date.",
+            },
+            search_mode: {
+              type: "number",
+              description: "Optional. Same as query.search_mode (1/2/3). Top-level value is merged into query if omitted there.",
+            },
+            rows_excluded: {
+              type: "number",
+              description: "Optional. Same as query.rows_excluded (1 drop 备案, 0 include). Top-level value is merged into query if omitted there.",
             },
             limit: {
               type: "number",
@@ -337,6 +390,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               enum: [...REG_CN_VIEW_TYPES],
               description: "eslist (default), list_by_drug_name, list_by_enterprise",
+            },
+            action: {
+              type: "string",
+              enum: ["output"],
+              description:
+                "Set to output to export the current query as Excel. Server returns an OSS download_url, not a binary file.",
             },
           },
         },
@@ -364,7 +423,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "reg-cn-detail",
         description:
-          "Detail for one reg_cn acceptance/review row. id is the encrypted id from reg-cn-search items (not the raw 受理号).",
+          "Detail for one reg_cn acceptance/review row. Prefer the encrypted id from reg-cn-search items; a raw 受理号 is accepted as a fallback.",
         inputSchema: {
           type: "object",
           properties: {
@@ -422,17 +481,40 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
       case "yaohai-search": {
         const validated = YaohaiSearchSchema.parse(args);
+        const sanitized = sanitizeQuery(
+          validated.dbname,
+          hoistQueryFlags(asQuery(validated.query), validated)
+        );
+        if (validated.action === "output") {
+          const content = await mcpDbOutput({
+            dbname: validated.dbname,
+            query: sanitized.query,
+          });
+          return ok(attachSearchMeta(content, sanitized));
+        }
         const window = enforceRetrievalWindow(
           clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX),
           clampOffset(validated.offset)
         );
         const content = await yaohaiPost("/g/mcp/yaohai/search", {
           dbname: validated.dbname,
-          query: asQuery(validated.query),
+          query: sanitized.query,
           limit: window.limit,
           offset: window.offset,
         });
-        return ok(content);
+        return ok(
+          attachSearchMeta(
+            content,
+            sanitized,
+            limitMeta(
+              validated.limit,
+              window.limit,
+              window.offset,
+              YAOHAI_LIMIT_DEFAULT,
+              YAOHAI_LIMIT_MAX
+            )
+          )
+        );
       }
       case "yaohai-detail": {
         const validated = YaohaiDetailSchema.parse(args);
@@ -505,37 +587,66 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         // Per-db required params (e.g. drugsales needs groupid=205) go first so
-        // caller-supplied values can still override them.
-        const query: QueryObject = { ...(entry.defaultQuery ?? {}), ...asQuery(validated.query) };
+        // caller-supplied values can still override them. Merge before sanitize
+        // so query_applied reports the same object fetchFacets actually sends.
+        const sanitized = sanitizeQuery(validated.dbname, {
+          ...(entry.defaultQuery ?? {}),
+          ...asQuery(validated.query),
+        });
 
         const content = await fetchFacets({
           prefix: entry.prefix,
-          query,
+          query: sanitized.query,
           fields: validated.fields,
           catalog: entry.fields,
         });
-        return ok({
-          dbname: validated.dbname,
-          title: entry.title,
-          ...content,
-        });
+        return ok(
+          attachSearchMeta(
+            {
+              dbname: validated.dbname,
+              title: entry.title,
+              ...content,
+            },
+            sanitized
+          )
+        );
       }
       case "yaohai-global-search": {
         const validated = YaohaiGlobalSearchSchema.parse(args ?? {});
-        const query = asQuery(validated.query);
-        if (validated.q && (query.term === undefined || query.term === "")) {
-          query.term = validated.q;
+        const hoisted = hoistQueryFlags(asQuery(validated.query), validated);
+        if (validated.q && (hoisted.term === undefined || hoisted.term === "")) {
+          hoisted.term = validated.q;
+        }
+        const sanitized = sanitizeQuery("global_search", hoisted);
+        if (validated.action === "output") {
+          const content = await mcpDbOutput({
+            dbname: "global_search",
+            query: sanitized.query,
+          });
+          return ok(attachSearchMeta(content, sanitized));
         }
         const window = enforceRetrievalWindow(
           clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX),
           clampOffset(validated.offset)
         );
         const content = await yaohaiPost("/g/mcp/yaohai/global-search", {
-          query,
+          query: sanitized.query,
           limit: window.limit,
           offset: window.offset,
         });
-        return ok(content);
+        return ok(
+          attachSearchMeta(
+            content,
+            sanitized,
+            limitMeta(
+              validated.limit,
+              window.limit,
+              window.offset,
+              YAOHAI_LIMIT_DEFAULT,
+              YAOHAI_LIMIT_MAX
+            )
+          )
+        );
       }
       case "product-cn-fields": {
         EmptyObjectSchema.parse(args ?? {});
@@ -548,7 +659,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "product-cn-search": {
         const validated = ProductCnSearchSchema.parse(args ?? {});
         const viewType = validated.view_type ?? "eslist";
-        const query = applyProductCnDefaults(asQuery(validated.query)) as QueryObject;
+        const sanitized = sanitizeQuery(
+          "product_cn",
+          hoistQueryFlags(asQuery(validated.query), validated)
+        );
+        const query = applyProductCnDefaults(sanitized.query) as QueryObject;
+        sanitized.query = query;
+        if (validated.action === "output") {
+          const content = await mcpDbOutput({
+            dbname: "product_cn",
+            query,
+            viewType,
+          });
+          return ok(attachSearchMeta(content, sanitized));
+        }
         const window = enforceRetrievalWindow(
           clampLimit(validated.limit, CN_LIMIT_DEFAULT, CN_LIMIT_MAX),
           clampOffset(validated.offset)
@@ -571,18 +695,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               viewType,
               dbname: "product_cn",
             });
-        return ok(content);
+        return ok(
+          attachSearchMeta(
+            content,
+            sanitized,
+            limitMeta(validated.limit, limit, offset, CN_LIMIT_DEFAULT, CN_LIMIT_MAX)
+          )
+        );
       }
       case "product-cn-facets": {
         const validated = ProductCnFacetsSchema.parse(args);
-        const query = applyProductCnDefaults(asQuery(validated.query)) as QueryObject;
+        const sanitized = sanitizeQuery("product_cn", asQuery(validated.query));
+        const query = applyProductCnDefaults(sanitized.query) as QueryObject;
+        sanitized.query = query;
         const content = await fetchFacets({
           prefix: PRODUCT_CN_FACET_PREFIX,
           query,
           fields: validated.facets,
           catalog: PRODUCT_CN_FACET_FIELDS,
         });
-        return ok(content);
+        return ok(attachSearchMeta(content, sanitized));
       }
       case "product-cn-detail": {
         const validated = ProductCnDetailSchema.parse(args);
@@ -606,7 +738,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "reg-cn-search": {
         const validated = RegCnSearchSchema.parse(args ?? {});
         const viewType = validated.view_type ?? "eslist";
-        const query = applyRegCnDefaults(asQuery(validated.query)) as QueryObject;
+        const sanitized = sanitizeQuery(
+          "reg_cn",
+          hoistQueryFlags(asQuery(validated.query), validated)
+        );
+        const query = applyRegCnDefaults(sanitized.query) as QueryObject;
+        sanitized.query = query;
+        if (validated.action === "output") {
+          const content = await mcpDbOutput({
+            dbname: "reg_cn",
+            query,
+            viewType,
+          });
+          return ok(attachSearchMeta(content, sanitized));
+        }
         const window = enforceRetrievalWindow(
           clampLimit(validated.limit, CN_LIMIT_DEFAULT, CN_LIMIT_MAX),
           clampOffset(validated.offset)
@@ -629,18 +774,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               viewType,
               dbname: "reg_cn",
             });
-        return ok(content);
+        return ok(
+          attachSearchMeta(
+            content,
+            sanitized,
+            limitMeta(validated.limit, limit, offset, CN_LIMIT_DEFAULT, CN_LIMIT_MAX)
+          )
+        );
       }
       case "reg-cn-facets": {
         const validated = RegCnFacetsSchema.parse(args);
-        const query = applyRegCnDefaults(asQuery(validated.query)) as QueryObject;
+        const sanitized = sanitizeQuery("reg_cn", asQuery(validated.query));
+        const query = applyRegCnDefaults(sanitized.query) as QueryObject;
+        sanitized.query = query;
         const content = await fetchFacets({
           prefix: REG_CN_FACET_PREFIX,
           query,
           fields: validated.facets,
           catalog: REG_CN_FACET_FIELDS,
         });
-        return ok(content);
+        return ok(attachSearchMeta(content, sanitized));
       }
       case "reg-cn-detail": {
         const validated = RegCnDetailSchema.parse(args);
