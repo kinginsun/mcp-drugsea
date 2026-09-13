@@ -36,6 +36,52 @@ function braceBlock(src, openIdx) {
   return "";
 }
 
+function prefixBindings(src) {
+  const map = {};
+  const re = /const (\w+)\s*=\s*`\$\{[A-Z0-9_]+\}([^`]*)`/g;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    map[m[1]] = m[2];
+  }
+  return map;
+}
+
+function urlPathFromExpr(expr, prefixes) {
+  const host = expr.match(/`\$\{[A-Z0-9_]+\}([^`]+)`/);
+  if (host) return host[1];
+  const varRef = expr.match(/`\$\{(\w+)\}([^`]*)`/);
+  if (varRef && prefixes[varRef[1]] !== undefined) {
+    return prefixes[varRef[1]] + varRef[2];
+  }
+  return null;
+}
+
+function parseInlineExpandViews(src, renderedSrc) {
+  const prefixes = prefixBindings(src);
+  const fields = [];
+  const re = /<ConditionExpandView\b([^>]*?)\/>/g;
+  let m;
+  while ((m = re.exec(renderedSrc)) !== null) {
+    const attrs = m[1];
+    if (/filterType=["'](?!terms)/.test(attrs)) continue;
+    const title = attrs.match(/title=["']([^"']+)["']/);
+    const queryKey = attrs.match(/queryKey=["']([^"']+)["']/);
+    if (!title || !queryKey) continue;
+    const urlAttr = attrs.match(/url=\{\s*(`[^`]+`)\s*\}/);
+    if (!urlAttr) continue;
+    const urlPath = urlPathFromExpr(urlAttr[1], prefixes);
+    if (!urlPath) continue;
+    fields.push({
+      title: title[1],
+      queryKey: queryKey[1],
+      urlPath,
+      filterType: "terms",
+      showSearchBox: /showSearchBox=\{?true\}?/.test(attrs),
+    });
+  }
+  return fields;
+}
+
 function parseRenderedPanel(relPath) {
   const src = readFileSync(`${FRONTEND}/${relPath}`, "utf8");
   const retIdx = src.lastIndexOf("return (");
@@ -68,6 +114,9 @@ function parseRenderedPanel(relPath) {
       filterType: "terms",
       showSearchBox: /showSearchBox:\s*true/.test(block),
     });
+  }
+  if (!fields.length) {
+    fields.push(...parseInlineExpandViews(src, src.slice(retIdx)));
   }
   return fields;
 }

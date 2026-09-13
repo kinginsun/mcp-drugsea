@@ -18,15 +18,15 @@ filter.
 | `product_jp` | `ATC_code`, `ATC` (tree) | Same letter semantics as `product_cn`. `ATC_code` via `yaohai-facets`; `ATC` tree is `GET /c/get/atc/index2`. |
 | `uk_emc` | `ATC_code` (治疗领域), `ATC` (tree) | `ATC_code` is facetable via `yaohai-facets`; the `ATC` tree is filter-only. |
 | `hma` | `ATC` (tree) | Tree field only — `yaohai-facets` cannot aggregate it, so filter-only. |
-| `generic_cn` | `ATC_code` | Defined in the panel file but **not rendered**. Do not treat as SPA 条件筛选. Letter filter may still work in `query`. |
+| `generic_cn` | `ATC_code` | SPA 条件筛选 + `yaohai-facets` (`GET /generic/cn/list/ATC_code`). Letter filter. |
 | `sales_cn` | `ATC_code` (治疗分类) | `yaohai-facets` static list; values are `letter:中文`. |
 | `drugsales` | — | Use `drug_type` / `administration_route`. |
 
 ### You cannot fetch every ATC distribution through MCP
 
-`product_cn` / `reg_cn` (dedicated tools), `uk_emc`, `product_eu`, and `product_jp`
-expose `ATC_code` to an MCP facet tool. `sales_cn` ATC is a static `letter:中文` list
-via `yaohai-facets` (`count` null). `generic_cn` does not render ATC. `hma` is tree-only.
+`product_cn` / `reg_cn` (dedicated tools), `uk_emc`, `product_eu`, `product_jp`, and
+`generic_cn` expose `ATC_code` to an MCP facet tool. `sales_cn` ATC is a static
+`letter:中文` list via `yaohai-facets` (`count` null). `hma` is tree-only.
 
 That has two consequences:
 

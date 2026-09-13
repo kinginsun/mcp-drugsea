@@ -41,6 +41,7 @@ export const QUERY_ALIASES: Record<string, Record<string, string>> = {
   zhaobiao: { company: "manufacture" },
   shuomingshu: { company: "manufacture" },
   cn_company: { company: "manufacture", enterprise: "manufacture" },
+  generic_cn: { project_id: "XUI", year: "first_approve_year" },
 };
 
 const PRODUCT_CN_EXTRA = [
@@ -105,8 +106,36 @@ const KNOWN_FILTERS: Record<string, readonly string[]> = {
     "therapeutic_area",
     "tags",
   ],
-  // generic_basic_info is product-level: no enterprise/manufacture column.
-  generic_cn: ["drug_name", "dosage_form", "drug_type", "ATC_code", "general_name", "XUI"],
+  // 仿制药立项调研. Rows are 原研剂型产品, not 批文.
+  // PHP also accepts year as first_approve_year and project_id as XUI.
+  generic_cn: [
+    "drug_name",
+    "dosage_form",
+    "general_name",
+    "XUI",
+    "project_id",
+    "market",
+    "target",
+    "indication",
+    "is_nme",
+    "first_approve_year",
+    "year",
+    "patent_expire_date",
+    "ATC_code",
+  ],
+  // 创新药研究报告. Rows are XUI 实体（单成分化药/生物创新药）.
+  china_new_drugs: [
+    "drug_name",
+    "enterprise",
+    "slh",
+    "indication",
+    "target",
+    "XUI",
+    "kind",
+    "drug_type",
+    "rd_status",
+    "market",
+  ],
   global_search: [
     "term",
     "drug_name",

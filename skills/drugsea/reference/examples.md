@@ -337,10 +337,11 @@ For the variety-level rollup:
 Rows carry `yzpj_passed` (已过评), `yzpj_not_passed`, `listing_num`, `jicai_num`,
 `reference_drug_num`.
 
-**`generic_cn` has no company column.** Usable keys are `drug_name` and `dosage_form`.
-`enterprise` / `manufacture` are rejected (MCP) or ignored — they must not return the
-whole catalogue or a SQL dump. For "company X's consistency-evaluation products", use
-`product_cn` with `manufacture` plus `is_passed_yizhi` instead.
+**`generic_cn` has no company column.** Keyword key is `drug_name`; SPA 条件筛选 is
+`market` / `dosage_form` / `target` / `indication` / `is_nme` / `first_approve_year` /
+`ATC_code`. `enterprise` / `manufacture` are rejected. For "company X's
+consistency-evaluation products", use `product_cn` with `manufacture` plus
+`is_passed_yizhi` instead.
 
 ---
 

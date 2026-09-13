@@ -176,8 +176,8 @@ For "what's the competitive landscape of X", query **both** and say which came f
 | HK marketed drugs (Department of Health) | `hk_doh` | [db-marketed.md](reference/db-marketed.md) |
 | Macau marketed drugs | `isaf_drugs` | [db-marketed.md](reference/db-marketed.md) |
 | Macau TCM & natural drugs | `isaf_tcm` | [db-marketed.md](reference/db-marketed.md) |
-| 一致性评价 / 仿制药 产品 | `generic_cn` | [db-registration.md](reference/db-registration.md) |
-| 中国新药 (1类/创新药) | `china_new_drugs` | [db-registration.md](reference/db-registration.md) |
+| 仿制药立项调研 | `generic_cn` | [db-registration.md](reference/db-registration.md) |
+| 创新药研究报告 (中国新药) | `china_new_drugs` | [db-registration.md](reference/db-registration.md) |
 | 【随心汇】注册审评聚合 | `drugreg_cn` | [db-registration.md](reference/db-registration.md) |
 | 一致性评价品种 (first-pass) | `yzpj_products` | [db-registration.md](reference/db-registration.md) |
 | 原辅包 (CDE YFB) 登记 | `cde_yfb_registration` | [db-registration.md](reference/db-registration.md) |
@@ -337,10 +337,10 @@ returns `download_url` (plus `oss_url`). It never streams a binary file. If
   read `total` to *confirm* a class filter worked.
 - **`drugsales` requires VIP (`groupid=205`)** and is slow without filters — always
   pass `year` and a drug/company key.
-- **15 databases have `has_detail: false`** — a detail call will fail or return nothing.
+- **14 databases have `has_detail: false`** — a detail call will fail or return nothing.
   Use the list fields instead. They are: `nmpa_tcm_protection`, `nmpa_buchongbeian`,
   `japan_dmf`, `product_jp`, `isaf_drugs`, `isaf_tcm`, `fda_dmf`, `cmchk_pcm`,
-  `drugsales`, `sales_cn`, `sales_global`, `yzpj_products`, `china_new_drugs`,
+  `drugsales`, `sales_cn`, `sales_global`, `yzpj_products`,
   `herb_formulas`, `herbs`.
 - **`yaohai-search` with `dbname=product_cn` or `dbname=reg_cn` is a mistake** when the
   dedicated tools apply — they add view types, facets and field discovery.
@@ -376,8 +376,16 @@ returns `download_url` (plus `oss_url`). It never streams a binary file. If
   `auth_num`, `brand_name`, `indication`. `general_name_cn` is not a keyword box.
   「仅有效文号」is `only_active=1`; default `search_mode=3`. `in_sfda=0` on eslist
   returns invalid approvals. ATC letters include **Z=中药（非 WHO）** and **W=原料药**.
-- **`china_new_drugs` keyword keys match the SPA panel:** `drug_name`（中英文药品名称/商品名）,
-  `enterprise`, `slh`, `indication`. No `item` box.
+- **`generic_cn` keyword keys match the SPA panel:** `drug_name`（成分/通用名）,
+  `dosage_form`. 条件筛选 is `market`（FDA/EMA/PMDA/Canada/NMPA）, `target`,
+  `indication`, `is_nme`, `first_approve_year`, `ATC_code`. No `item` box; no
+  `drug_type`; `enterprise` / `manufacture` are invalid. `year` aliases to
+  `first_approve_year`; `project_id` aliases to `XUI`.
+- **`china_new_drugs` keyword keys match the SPA panel:** `drug_name`（中英文药品名称）,
+  `enterprise`, `slh`, `indication`, `target`. 条件筛选 is `rd_status`（研究中/已批准）,
+  `kind`（全新实体/新剂型/新适应症）, `drug_type`, `target`, `indication`,
+  `market`（FDA/EMA/PMDA/NMPA）. No `item` box; no `ATC_code` / `apply_type` /
+  `dosage_form`. Prefix is `/b/new/drug/cn/list`, not `drugreg_cn`.
 - **Malformed ranges do the opposite: they hard-error with HTTP 400.**
   `"20-50"` → `number_format_exception`; `"2024/01/01-2024-12-31"` → `parse_exception`.
   Only `"A to B"` is accepted. A 400 means your syntax was wrong, not that the filter

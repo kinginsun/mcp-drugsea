@@ -1597,82 +1597,54 @@
     {
       "title": "研发状态",
       "queryKey": "rd_status",
-      "urlPath": "/b/drugreg/cn/list/rd_status",
+      "urlPath": "/b/new/drug/cn/list/rd_status",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "新药类别",
+      "queryKey": "kind",
+      "urlPath": "/b/new/drug/cn/list/kind",
       "filterType": "terms",
       "showSearchBox": false
     },
     {
       "title": "药品类型",
       "queryKey": "drug_type",
-      "urlPath": "/b/drugreg/cn/list/drug_type",
+      "urlPath": "/b/new/drug/cn/list/drug_type",
       "filterType": "terms",
       "showSearchBox": false
     },
     {
-      "title": "药品剂型",
-      "queryKey": "dosage_form",
-      "urlPath": "/b/drugreg/cn/list/dosage_form",
+      "title": "靶点",
+      "queryKey": "target",
+      "urlPath": "/b/new/drug/cn/list/target",
       "filterType": "terms",
       "showSearchBox": false
     },
     {
-      "title": "申请类型",
-      "queryKey": "apply_type",
-      "urlPath": "/b/drugreg/cn/list/apply_type",
+      "title": "适应症",
+      "queryKey": "indication",
+      "urlPath": "/b/new/drug/cn/list/indication",
       "filterType": "terms",
       "showSearchBox": false
     },
     {
-      "title": "办理状态",
-      "queryKey": "transact_status",
-      "urlPath": "/b/drugreg/cn/list/transact_status",
-      "filterType": "terms",
-      "showSearchBox": false
-    },
-    {
-      "title": "审评结论",
-      "queryKey": "conclusion",
-      "urlPath": "/b/drugreg/cn/list/conclusion",
-      "filterType": "terms",
-      "showSearchBox": false
-    },
-    {
-      "title": "特殊品种",
-      "queryKey": "special_list",
-      "urlPath": "/b/drugreg/cn/list/special_list",
-      "filterType": "terms",
-      "showSearchBox": false
-    },
-    {
-      "title": "注册分类",
-      "queryKey": "register_type",
-      "urlPath": "/b/drugreg/cn/list/register_type",
-      "filterType": "terms",
-      "showSearchBox": false
-    },
-    {
-      "title": "申报类型",
-      "queryKey": "slh_types",
-      "urlPath": "/b/drugreg/cn/list/slh_types",
-      "filterType": "terms",
-      "showSearchBox": false
-    },
-    {
-      "title": "来源省份",
-      "queryKey": "prov_abs",
-      "urlPath": "/b/drugreg/cn/list/prov_abs",
-      "filterType": "terms",
-      "showSearchBox": false
-    },
-    {
-      "title": "ATC分类",
-      "queryKey": "ATC_code",
-      "urlPath": "/b/drugreg/cn/list/ATC_code",
+      "title": "上市国家",
+      "queryKey": "market",
+      "urlPath": "/b/new/drug/cn/list/market",
       "filterType": "terms",
       "showSearchBox": false
     }
   ],
   "generic_cn": [
+    {
+      "title": "上市国家",
+      "queryKey": "market",
+      "urlPath": "/generic/cn/list/market",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
     {
       "title": "药品剂型",
       "queryKey": "dosage_form",
@@ -1681,9 +1653,37 @@
       "showSearchBox": false
     },
     {
-      "title": "药品类型",
-      "queryKey": "drug_type",
-      "urlPath": "/generic/cn/list/drug_type",
+      "title": "靶点",
+      "queryKey": "target",
+      "urlPath": "/generic/cn/list/target",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "适应症",
+      "queryKey": "indication",
+      "urlPath": "/generic/cn/list/indication",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "创新类型",
+      "queryKey": "is_nme",
+      "urlPath": "/generic/cn/list/is_nme",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "首次批准年",
+      "queryKey": "first_approve_year",
+      "urlPath": "/generic/cn/list/first_approve_year",
+      "filterType": "terms",
+      "showSearchBox": false
+    },
+    {
+      "title": "ATC分类",
+      "queryKey": "ATC_code",
+      "urlPath": "/generic/cn/list/ATC_code",
       "filterType": "terms",
       "showSearchBox": false
     }

@@ -390,8 +390,8 @@ pickers are still not fetchable. `product_cn` / `reg_cn` keep dedicated tools.
 | `product_us` | `ApplyType`, `year`, `ReviewPriorityOrphanStatus`, `MarketingStatus`, `RLD`, `SubmissionClassification`, `drug_type`, `InnovatorOrGeneric` | ✓ `GET /fda_drugs/eslist/{field}` |
 | `sales_cn` | `years`, `quarter`, `drug_type`, `administration_route`, `ATC_code`, `city` | ✓ static SPA list (`count` null) |
 | `sales_global` | `years`, `source` | ✓ static SPA list (`count` null) |
-| `china_new_drugs` | `rd_status`, `apply_type`, `conclusion`, `transact_status`, `register_type`, `special_list`, `drug_type`, `dosage_form`, `slh_types`, `ATC_code`, `prov_abs` | ✓ `GET /b/drugreg/cn/list/{field}` (reg_cn list aggs) |
-| `generic_cn` | `drug_type`, `dosage_form` | ✓ `GET /generic/cn/list/{field}` (needs drugsea_api deploy) |
+| `china_new_drugs` | `rd_status`, `kind`, `drug_type`, `target`, `indication`, `market` | ✓ `GET /b/new/drug/cn/list/{field}` |
+| `generic_cn` | `market`, `dosage_form`, `target`, `indication`, `is_nme`, `first_approve_year`, `ATC_code` | ✓ `GET /generic/cn/list/{field}` |
 | `drugreg_cn` | 16 terms `is_condition` fields | ✓ `GET /drugreg_cn/aggs/filter/{field}` |
 | `global_search` | `dbname` | not in catalog (parent-supplied list) |
 | `medical_device_beian` / `_jinkou_beian` | `filing_date` | date picker only — not in catalog |

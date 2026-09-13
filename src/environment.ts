@@ -1,7 +1,7 @@
 import os from "node:os";
 
 export const PACKAGE_NAME = "mcp-drugsea";
-export const PACKAGE_VERSION = "0.11.0";
+export const PACKAGE_VERSION = "0.12.0";
 
 export type EnvironmentFingerprint = Readonly<{
   packageName: string;

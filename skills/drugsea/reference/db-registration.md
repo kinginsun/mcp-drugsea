@@ -471,46 +471,53 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 
 ---
 
-## `generic_cn` — 一致性评价产品
+## `generic_cn` — 仿制药立项调研
 
 **Category** 注册情报 · **Route type** `custom` · **Frontend** `/generic/cn` · **API path** `/generic/cn/list` · **Detail** yes
 
-*Catalog keywords:* 仿制药, 一致性评价, 参比制剂
+*Catalog keywords:* 仿制药立项调研, 全球原研单方化药, 可仿制性
 
 | MCP tool | |
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | `yaohai-facets` (2) |
+| Facets | `yaohai-facets` (7) |
 | Detail | `yaohai-detail` |
 
-> **Rows are varieties (品种), not individual products** — each carries counts like `yzpj_passed` (已过评), `listing_num` (中国上市), `jicai_num` (国家集采). `has_detail: false`.
+> **Rows are 原研剂型产品, not 批文.** Each carries `yzpj_passed` (已过评), `listing_num` (中国上市), `jicai_num` (国家集采), `markets` (FDA · EMA · PMDA · Canada · NMPA). `has_detail: true`. There is no company column — `enterprise` / `manufacture` are invalid.
 
-**Usable keys are `drug_name` and `dosage_form`.** There is no company column on `generic_basic_info`. `enterprise` / `manufacture` are not valid — MCP rejects them (or lists them in `query_ignored`) instead of returning all 3,823 varieties or a SQL error.
-
-To find a company's consistency-evaluation varieties, use `product_cn` with `is_passed_yizhi` / `gj_passed_yizhi` instead.
+To find a company's consistency-evaluation *approvals*, use `product_cn` with `is_passed_yizhi` / `gj_passed_yizhi`. For first-pass variety status use `yzpj_products`.
 
 ### Search fields
 
 | Key | Verified | Label |
 |---|---|---|
-| `drug_name` | ✓ | 药品名称 |
+| `drug_name` | ✓ | 成分 / 通用名 |
 | `dosage_form` | ✓ | 剂型 |
+| `XUI` / `project_id` | | 项目 id（`project_id` aliases to `XUI`） |
 
 ### Facet / filter fields
 
-`filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
-
-`yaohai-facets` fetches `drug_type` / `dosage_form` via `GET /generic/cn/list/{field}` (needs drugsea_api deploy of that route). `ATC_code` is defined in the panel file but **not rendered**.
+SPA 条件筛选 (`ConditionSearchPanel.js`) and PHP `$allowed` are the same seven terms fields. `patent_expire_date` is a date picker — filter-only, not in `yaohai-facets`. `drug_type` is **not** a field (PHP returns `Unknown facet field`).
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `drug_type` | | ✓ | 药品类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `dosage_form` | ✓ | ✓ | 药品剂型 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `market` | ✓ | ✓ | 上市国家 | multiple — `FDA` / `EMA` / `PMDA` / `Canada` / `NMPA` |
+| `dosage_form` | ✓ | ✓ | 药品剂型 | multiple — exact string or `string[]` |
+| `target` | | ✓ | 靶点 | multiple — copy the facet value verbatim |
+| `indication` | | ✓ | 适应症 | multiple — copy the facet value verbatim |
+| `is_nme` | | ✓ | 创新类型 | multiple — `"1"` = NME / 新活性, `"0"` = 其他原研 |
+| `first_approve_year` | | ✓ | 首次批准年 | multiple — year string; `year` aliases here |
+| `ATC_code` | | ✓ | ATC分类 | multiple — first-level letter (`C`, `L`, …) |
+| `patent_expire_date` | | | 专利到期 | date — `"YYYY-MM-DD to YYYY-MM-DD"` |
+
+```jsonc
+{"dbname": "generic_cn", "fields": ["market", "dosage_form"]}
+```
 
 ### Examples
 
-**Consistency-evaluation varieties — 7 rows (variety-level, not per-product)**
+**阿托伐他汀钙 片剂 — 1 条仿制药立项调研记录（不是批文）**
 
 ```jsonc
 {"query": {"drug_name": "阿托伐他汀"}, "limit": 20}
@@ -524,51 +531,44 @@ To find a company's consistency-evaluation varieties, use `product_cn` with `is_
 
 ---
 
-## `china_new_drugs` — 中国新药
+## `china_new_drugs` — 创新药研究报告
 
-**Category** 注册情报 · **Route type** `custom` · **Frontend** `/reg/china_new_drugs` · **API path** `/b/new/drug/cn/list` · **Detail** NO
+**Category** 注册情报 · **Route type** `custom` · **Frontend** `/new/drugs/cn` · **API path** `/b/new/drug/cn/list` · **Detail** yes
 
-*Catalog keywords:* 新药, 1类, 创新药
+*Catalog keywords:* 创新药研究报告, 中国新药, 新药, 1类, 创新药, 单成分
 
 | MCP tool | |
 |---|---|
 | Search | `yaohai-search` |
 | Field keys | — |
-| Facets | `yaohai-facets` (11 terms) |
-| Detail | — (no detail) |
+| Facets | `yaohai-facets` (6) |
+| Detail | `yaohai-detail` |
 
-> `has_detail: false`. MySQL engine: prefer plain string keywords. Catalog `search_fields` match the SPA「关键词查询」panel: `drug_name`, `enterprise`, `slh`, `indication`. There is no `item` box. The list SQL currently filters `drug_name` / `enterprise` / `slh`; `indication` is on the page but the helper does not read it (stored columns are `indication_ctr` / `indication_cde`).
+> **Rows are XUI 实体（单成分化药/生物创新药）, not 受理号.** `has_detail: true` via `/global/drugs/detail`. There is no `item` box. PHP `$allowed` and SPA 条件筛选 are the same six terms. Do **not** use `GET /b/drugreg/cn/list/{field}` — that is `drugreg_cn`.
 
 ### Search fields
 
 | Key | Verified | Label |
 |---|---|---|
-| `drug_name` | | 中英文药品名称 /商品名 |
-| `enterprise` | | 企业名称 |
-| `slh` | | 受理号 |
-| `indication` | | 适应症（页面有框；list SQL 目前未读该键） |
+| `drug_name` | | 中英文药品名称 |
+| `indication` | | 适应症（字符串 LIKE；数组按 facet 精确匹配） |
+| `target` | | 靶点 |
+| `slh` | | 受理号（反查实体） |
+| `enterprise` | | 企业名称（反查实体） |
+| `XUI` | | 实体 id |
 
 ### Facet / filter fields
 
-`filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
-
-`yaohai-facets` fetches terms buckets via `GET /b/drugreg/cn/list/{field}` (reg_cn list aggregations, same as the SPA `url`). Date pickers are filter-only.
+SPA 条件筛选 (`ConditionSearchPanel.js`) and PHP `$allowed` are the same six terms fields. `apply_type` / `dosage_form` / `ATC_code` / `transact_status` are **not** fields here (PHP returns `Unknown facet field`).
 
 | Key | Verified | Facetable | Label | Filter type |
 |---|---|---|---|---|
-| `rd_status` | | ✓ | 研发状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `apply_type` | | ✓ | 申请类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `conclusion` | | ✓ | 审评结论 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `transact_status` | | ✓ | 办理状态 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `register_type` | | ✓ | 注册分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `special_list` | | ✓ | 特殊品种 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `drug_type` | | ✓ | 药品类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `dosage_form` | | ✓ | 药品剂型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `slh_types` | | ✓ | 申报类型 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `ATC_code` | | ✓ | ATC分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `prov_abs` | | ✓ | 来源省份 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `undertake_date` | | SPA | 承办日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
-| `status_start_date` | | SPA | 状态日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `rd_status` | ✓ | ✓ | 研发状态 | multiple — `研究中` / `已批准` |
+| `kind` | ✓ | ✓ | 新药类别 | multiple — `全新实体` / `新剂型` / `新适应症` |
+| `drug_type` | | ✓ | 药品类型 | multiple — exact string or `string[]` |
+| `target` | | ✓ | 靶点 | multiple — copy the facet value verbatim |
+| `indication` | | ✓ | 适应症 | multiple — copy the facet value verbatim |
+| `market` | ✓ | ✓ | 上市国家 | multiple — `FDA` / `EMA` / `PMDA` / `NMPA` |
 
 ---
 

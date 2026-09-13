@@ -267,17 +267,66 @@ async function main() {
   );
   check("sales_cn static count is null", sales?.distributions?.drug_type?.items?.[0]?.count === null);
 
-  // --- dedicated-route: china_new_drugs (SPA urls are reg_cn list aggs) ---
-  const cnd = toolText(
+  // --- dedicated-route: china_new_drugs 创新药研究报告 ---
+  const cndDisc = toolText(
     await send("tools/call", {
       name: "yaohai-facets",
-      arguments: { dbname: "china_new_drugs", fields: ["rd_status"] },
+      arguments: { dbname: "china_new_drugs" },
     }),
   );
   check(
-    "china_new_drugs facet succeeds",
+    "china_new_drugs discovery title is 创新药研究报告",
+    cndDisc?.title === "创新药研究报告",
+    cndDisc?.title,
+  );
+  check(
+    "china_new_drugs discovery prefix is /b/new/drug/cn/list",
+    cndDisc?.facet_prefix === "/b/new/drug/cn/list",
+    cndDisc?.facet_prefix,
+  );
+  check(
+    "china_new_drugs discovery lists SPA fields",
+    JSON.stringify(Object.keys(cndDisc?.facets ?? {})) ===
+      JSON.stringify([
+        "rd_status",
+        "kind",
+        "drug_type",
+        "target",
+        "indication",
+        "market",
+      ]),
+    JSON.stringify(Object.keys(cndDisc?.facets ?? {})),
+  );
+  const cnd = toolText(
+    await send("tools/call", {
+      name: "yaohai-facets",
+      arguments: { dbname: "china_new_drugs", fields: ["rd_status", "kind", "market"] },
+    }),
+  );
+  check(
+    "china_new_drugs rd_status facet succeeds",
     cnd?.distributions?.rd_status?.success === true,
     JSON.stringify(cnd?.distributions?.rd_status)?.slice(0, 140),
+  );
+  check(
+    "china_new_drugs rd_status lists 研究中",
+    (cnd?.distributions?.rd_status?.items ?? []).some((i) => i.value === "研究中" && i.count > 0),
+    JSON.stringify(cnd?.distributions?.rd_status?.items)?.slice(0, 180),
+  );
+  check(
+    "china_new_drugs rd_status lists 已批准",
+    (cnd?.distributions?.rd_status?.items ?? []).some((i) => i.value === "已批准" && i.count > 0),
+    JSON.stringify(cnd?.distributions?.rd_status?.items)?.slice(0, 180),
+  );
+  check(
+    "china_new_drugs kind lists 全新实体",
+    (cnd?.distributions?.kind?.items ?? []).some((i) => i.value === "全新实体" && i.count > 0),
+    JSON.stringify(cnd?.distributions?.kind?.items)?.slice(0, 180),
+  );
+  check(
+    "china_new_drugs market lists NMPA",
+    (cnd?.distributions?.market?.items ?? []).some((i) => i.value === "NMPA" && i.count > 0),
+    JSON.stringify(cnd?.distributions?.market?.items)?.slice(0, 180),
   );
 
   // --- dedicated-route: drugreg_cn aggs filter ---
@@ -306,25 +355,53 @@ async function main() {
     JSON.stringify(eu?.distributions?.drug_type)?.slice(0, 140),
   );
 
-  // --- dedicated-route: generic_cn (needs drugsea_api deploy of GET /generic/cn/list/{field}) ---
+  // --- dedicated-route: generic_cn 仿制药立项调研 (SPA 上市国家 / 剂型) ---
+  const genDisc = toolText(
+    await send("tools/call", {
+      name: "yaohai-facets",
+      arguments: { dbname: "generic_cn" },
+    }),
+  );
+  check(
+    "generic_cn discovery title is 仿制药立项调研",
+    genDisc?.title === "仿制药立项调研",
+    genDisc?.title,
+  );
+  check(
+    "generic_cn discovery lists SPA fields",
+    JSON.stringify(Object.keys(genDisc?.facets ?? {})) ===
+      JSON.stringify([
+        "market",
+        "dosage_form",
+        "target",
+        "indication",
+        "is_nme",
+        "first_approve_year",
+        "ATC_code",
+      ]),
+    JSON.stringify(Object.keys(genDisc?.facets ?? {})),
+  );
   const gen = toolText(
     await send("tools/call", {
       name: "yaohai-facets",
-      arguments: { dbname: "generic_cn", fields: ["drug_type"] },
+      arguments: { dbname: "generic_cn", fields: ["market", "dosage_form"] },
     }),
   );
-  if (gen?.distributions?.drug_type?.success === true) {
-    check(
-      "generic_cn facet succeeds",
-      true,
-      JSON.stringify(gen?.distributions?.drug_type)?.slice(0, 180),
-    );
-  } else {
-    console.log(
-      "[WARN] generic_cn facet not live until drugsea_api GET /generic/cn/list/{filter} is deployed:",
-      JSON.stringify(gen?.distributions?.drug_type)?.slice(0, 180),
-    );
-  }
+  check(
+    "generic_cn market facet succeeds",
+    gen?.distributions?.market?.success === true,
+    JSON.stringify(gen?.distributions?.market)?.slice(0, 180),
+  );
+  check(
+    "generic_cn market lists FDA",
+    (gen?.distributions?.market?.items ?? []).some((i) => i.value === "FDA" && i.count > 0),
+    JSON.stringify(gen?.distributions?.market?.items)?.slice(0, 180),
+  );
+  check(
+    "generic_cn dosage_form facet succeeds",
+    gen?.distributions?.dosage_form?.success === true,
+    JSON.stringify(gen?.distributions?.dosage_form)?.slice(0, 120),
+  );
 
   // --- defaultQuery merge: drugsales needs groupid=205 ---
   const ds = toolText(
