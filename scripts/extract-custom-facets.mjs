@@ -20,8 +20,6 @@ const CUSTOM_PANELS = {
   product_eu: "routes/product/EU/components/ConditionSearchPanel.js",
   product_jp: "routes/product/JP/components/ConditionSearchPanel.js",
   product_us: "routes/product/US/components/ConditionSearchPanel.js",
-  china_new_drugs: "routes/register/china_new_drugs/components/ConditionSearchPanel.js",
-  generic_cn: "routes/product/generic_drugs/components/commonSearch/ConditionSearchPanel.js",
 };
 
 function braceBlock(src, openIdx) {

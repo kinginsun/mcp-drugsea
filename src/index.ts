@@ -58,6 +58,7 @@ import {
   sanitizeQuery,
 } from "./query.js";
 import { DBS_FACET_CATALOG } from "./dbs-facets.js";
+import { isMcpHiddenDb, mcpHiddenDbMessage, stripHiddenCatalogDatabases } from "./hidden-dbs.js";
 import {
   checkForUpdate,
   formatUpdateMessage,
@@ -170,7 +171,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             dbname: {
               type: "string",
               description:
-                "Database id, e.g. yibao, jiyao, jicai, jicai_mulu, fda_dmf. Prefer product-cn-search / reg-cn-search instead of product_cn / reg_cn.",
+                "Database id, e.g. yibao, jiyao, jicai, jicai_mulu, fda_dmf. Prefer product-cn-search / reg-cn-search instead of product_cn / reg_cn. china_new_drugs and generic_cn are hidden — do not query them.",
             },
             query: QUERY_PROP,
             search_mode: {
@@ -453,6 +454,14 @@ function asQuery(query: QueryObject | undefined): QueryObject {
  * terms 条件筛选 (product_cn / reg_cn have dedicated facet tools).
  */
 function facetDbUnknown(dbname: string): Record<string, unknown> {
+  if (isMcpHiddenDb(dbname)) {
+    return {
+      dbname,
+      supported: false,
+      error: mcpHiddenDbMessage(dbname),
+      hint: "china_new_drugs and generic_cn are hidden from MCP. Use yzpj_products / product_cn / reg_cn instead.",
+    };
+  }
   const near = DBS_FACET_DBS.filter((db) => db.includes(dbname) || dbname.includes(db)).slice(0, 5);
   return {
     dbname,
@@ -477,10 +486,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (validated.category) body.category = validated.category;
         if (validated.q) body.q = validated.q;
         const content = await yaohaiPost("/g/mcp/yaohai/catalog", body);
-        return ok(content);
+        return ok(stripHiddenCatalogDatabases(content));
       }
       case "yaohai-search": {
         const validated = YaohaiSearchSchema.parse(args);
+        if (isMcpHiddenDb(validated.dbname)) {
+          throw new Error(mcpHiddenDbMessage(validated.dbname));
+        }
         const sanitized = sanitizeQuery(
           validated.dbname,
           hoistQueryFlags(asQuery(validated.query), validated)
@@ -518,6 +530,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
       case "yaohai-detail": {
         const validated = YaohaiDetailSchema.parse(args);
+        if (isMcpHiddenDb(validated.dbname)) {
+          throw new Error(mcpHiddenDbMessage(validated.dbname));
+        }
         const content = await yaohaiPost("/g/mcp/yaohai/detail", {
           dbname: validated.dbname,
           id: validated.id,

@@ -2,11 +2,11 @@
 
 MCP (Model Context Protocol) stdio server for [DrugSea / Yaohai](https://db.drugsea.cn) pharmaceutical databases.
 
-The server forwards tool calls to **`https://db3.drugsea.cn/api`** with personal user token auth (`Authorization: Bearer ysk_…`). It covers:
+The server forwards tool calls to **`https://db.drugsea.cn/api`** with personal user token auth (`Authorization: Bearer ysk_…`). It covers:
 
 - **yaohai-*** — cross-database catalog / search / detail / facets / global (`POST /g/mcp/yaohai/*`; facets via GET)
-- **product-cn-*** — already-marketed China products (search/detail via MCP on db3; facets via GET)
-- **reg-cn-*** — CDE registration / review pipeline (search/detail via MCP on db3; facets via GET)
+- **product-cn-*** — already-marketed China products (search/detail via MCP POST; facets via GET)
+- **reg-cn-*** — CDE registration / review pipeline (search/detail via MCP POST; facets via GET)
 
 **GitHub:** [github.com/kinginsun/mcp-drugsea](https://github.com/kinginsun/mcp-drugsea)
 
@@ -109,15 +109,15 @@ Notes:
 - A token inherits the **same database permissions as its Yaohai account** — if your account cannot see a database, the token cannot either. If a tool call returns a permission error, check your account's subscription/permissions on db.drugsea.cn, not the MCP client.
 - Store the token in your MCP client's `env` (see below) or export it as `YAOHAI_MCP_TOKEN`. Never commit it to a repository.
 
-On db3, direct GET list routes may return encrypted payloads; this client auto-routes `product-cn-search` / `reg-cn-search` / detail through MCP POST when the base URL contains `db3.drugsea.cn`.
+Direct GET list routes may return encrypted payloads; this client defaults to routing `product-cn-search` / `reg-cn-search` / detail through MCP POST (`YAOHAI_USE_MCP_LIST=true`). Set `YAOHAI_USE_MCP_LIST=0` to use GET. Prefer `https://db.drugsea.cn/api` over `db3.drugsea.cn` — the latter's gateway times out around 50s (504 HTML) on slower MCP exports.
 
 ### Optional
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `YAOHAI_BASE_URL` | `https://db3.drugsea.cn/api` | API origin (no trailing slash). MCP: `/g/mcp/yaohai/*` |
+| `YAOHAI_BASE_URL` | `https://db.drugsea.cn/api` | API origin (no trailing slash). MCP: `/g/mcp/yaohai/*` |
 | `YAOHAI_VERIFY_SSL` | `true` | Set `false` / `0` / `off` to skip TLS certificate verification (needed on some prod hosts) |
-| `YAOHAI_USE_MCP_LIST` | auto on db3 | Force product/reg search via MCP POST instead of GET |
+| `YAOHAI_USE_MCP_LIST` | `true` | Force product/reg search via MCP POST instead of GET. Set `0` / `false` / `off` to use GET |
 | `YAOHAI_MCP_UPDATE_CHECK` | enabled | Set `0` / `false` / `off` to disable the startup version check (see [Updating](#updating)) |
 | `YAOHAI_NPM_REGISTRY` | `https://registry.npmjs.org` | Registry used by the version check. Point at a mirror if npmjs.org is unreachable from your network |
 
@@ -130,7 +130,9 @@ On db3, direct GET list routes may return encrypted payloads; this client auto-r
       "command": "npx",
       "args": ["-y", "@kinginsun/mcp-drugsea@latest"],
       "env": {
-        "YAOHAI_MCP_TOKEN": "ysk_your_token_here"
+        "YAOHAI_MCP_TOKEN": "ysk_your_token_here",
+        "YAOHAI_BASE_URL": "https://db.drugsea.cn/api",
+        "YAOHAI_USE_MCP_LIST": "true"
       }
     }
   }
@@ -146,7 +148,9 @@ On db3, direct GET list routes may return encrypted payloads; this client auto-r
       "command": "npx",
       "args": ["-y", "@kinginsun/mcp-drugsea@latest"],
       "env": {
-        "YAOHAI_MCP_TOKEN": "ysk_your_token_here"
+        "YAOHAI_MCP_TOKEN": "ysk_your_token_here",
+        "YAOHAI_BASE_URL": "https://db.drugsea.cn/api",
+        "YAOHAI_USE_MCP_LIST": "true"
       }
     }
   }
@@ -180,7 +184,7 @@ xlsx export is not implemented in this MCP (v1 returns JSON samples only).
 | `yaohai-catalog` | `category?`, `q?` | List databases |
 | `yaohai-search` | `dbname`, `query?`, `limit?`, `offset?` | Default limit 10, max 50; ≤ 1000 rows per query condition (offset+limit window cap) |
 | `yaohai-detail` | `dbname`, `id` | Skip DBs with `has_detail: false` |
-| `yaohai-facets` | `dbname?`, `query?`, `fields?` | Facets for 58 databases (44 `/in` + dedicated-route pages). Omit `fields` → discover; pass `fields` → fetch buckets. `sales_cn` / `sales_global` are hardcoded SPA lists. |
+| `yaohai-facets` | `dbname?`, `query?`, `fields?` | Facets for 56 databases (44 `/in` + dedicated-route pages). Omit `fields` → discover; pass `fields` → fetch buckets. `sales_cn` / `sales_global` are hardcoded SPA lists. `china_new_drugs` / `generic_cn` are hidden. |
 | `yaohai-global-search` | `q?`, `query?`, `limit?`, `offset?` | `q` fills `query.term` |
 
 When the target database is unclear, use `yaohai-catalog` (filter by `category` / `q`) to pick a `dbname`, then `yaohai-search`; or use `yaohai-global-search` for a cross-database panorama query.
@@ -226,7 +230,7 @@ For the two dedicated ES routes use `product-cn-facets` / `reg-cn-facets` instea
 
 ## Quick start for AI Agents (install, configure, test)
 
-> **Agents: prefer [`AGENT_SETUP.md`](AGENT_SETUP.md).** It is the full install playbook and additionally covers installing every companion skill under `skills/` (`drugsea`, `echarts`, `drug-project-initiation`). `drugsea` teaches correct tool routing, field keys, facets, and query gotchas across all 63 databases; `echarts` covers charts; `drug-project-initiation` produces 立项调研 HTML reports. The section below installs the server only.
+> **Agents: prefer [`AGENT_SETUP.md`](AGENT_SETUP.md).** It is the full install playbook and additionally covers installing every companion skill under `skills/` (`drugsea`, `echarts`, `drug-project-initiation`). `drugsea` teaches correct tool routing, field keys, facets, and query gotchas across the 61 MCP-visible databases; `echarts` covers charts; `drug-project-initiation` produces 立项调研 HTML reports. The section below installs the server only.
 
 This section is a step-by-step playbook an AI agent (or a human) can follow to install, configure, and verify this MCP server end to end.
 
@@ -357,8 +361,8 @@ After reloading MCP servers in the client, ask the agent:
 | `401` / `Unauthorized` (incl. backend's `invalid or missing X-Yaohai-Api-Key`) | Token expired or revoked — regenerate at db.drugsea.cn (personal center → API Token). The backend returns that `X-Yaohai-Api-Key` wording for **any** rejected credential; this client only ever sends `Authorization: Bearer`, so ignore the header name and replace the token. If you rotated the token, also `unset YAOHAI_MCP_TOKEN` — a stale exported value shadows the updated `.env`. |
 | Permission/forbidden on a specific DB | Token inherits account permissions — check the account's subscription on db.drugsea.cn |
 | `mcp-drugsea: command not found` when running npx | You are inside the package source dir — run from another directory or use `node dist/index.js` |
-| Empty/encrypted payload from product/reg GET | Use default db3 base URL (auto MCP POST routing) or set `YAOHAI_USE_MCP_LIST=true` |
-| Search tools fail with `HTTP 504` / HTML body / `Unexpected token '<'` | Gateway timeout on `POST /g/mcp/yaohai/search`. Catalog/facets can still pass. Server-side hang — retry later; do not publish over it |
+| Empty/encrypted payload from product/reg GET | Keep default `YAOHAI_USE_MCP_LIST=true` (MCP POST). Set `YAOHAI_BASE_URL=https://db.drugsea.cn/api` |
+| Search tools fail with `HTTP 504` / HTML body / `Unexpected token '<'` | `db3.drugsea.cn` gateway times out around 50s. Use `YAOHAI_BASE_URL=https://db.drugsea.cn/api`. If already on db, retry; do not publish over a hang |
 | TLS errors on some hosts | Set `YAOHAI_VERIFY_SSL=false` |
 | Client keeps running an old version | npx cache is keyed by the exact package arg — use `@latest` in `args`, or clear it with `npm cache npx ls` / `npm cache npx rm <key>`. See [Updating](#updating). |
 | Global install never updates | `npm install -g` pins the version — run `npm update -g @kinginsun/mcp-drugsea` |

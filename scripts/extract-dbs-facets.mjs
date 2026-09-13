@@ -140,6 +140,11 @@ for (const [dbname, fields] of Object.entries(custom)) {
   result[dbname] = fields;
 }
 
+const MCP_HIDDEN_DBS = new Set(["china_new_drugs", "generic_cn"]);
+for (const hidden of MCP_HIDDEN_DBS) {
+  delete result[hidden];
+}
+
 // Loss detection: if we parsed fewer entries than the literal contains `url:` lines,
 // some entries were silently skipped. Fail loudly rather than emit a short catalog.
 const urlCount = (objLiteral.match(/url:\s*`\$\{BASE_HOST\}/g) || []).length;
@@ -336,7 +341,7 @@ if (process.argv.includes("--verify")) {
   const rawBase =
     process.env.YAOHAI_BASE_URL ||
     dotenv.YAOHAI_BASE_URL ||
-    "https://db3.drugsea.cn/api";
+    "https://db.drugsea.cn/api";
   const base = rawBase.replace(/\/+$/, "");
   if (!token) {
     console.error("\n--verify needs YAOHAI_MCP_TOKEN");

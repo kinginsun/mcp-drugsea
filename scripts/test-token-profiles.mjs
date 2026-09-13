@@ -28,7 +28,7 @@ function loadTokensFile() {
 }
 
 async function yaohaiSearch(token, dbname) {
-  const base = process.env.YAOHAI_BASE_URL || "https://db3.drugsea.cn/api";
+  const base = process.env.YAOHAI_BASE_URL || "https://db.drugsea.cn/api";
   const res = await fetch(`${base}/g/mcp/yaohai/search`, {
     method: "POST",
     headers: {

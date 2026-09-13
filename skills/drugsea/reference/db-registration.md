@@ -2,7 +2,7 @@
 
 Chinese registration-side registers: NMPA licences, consistency evaluation, new drugs, 原辅包, and the `drugreg_cn` aggregation engine.
 
-12 databases: `nmpa_gmp`, `nmpa_tcm_protection`, `nmpa_tcm_granules`, `nmpa_guochan`, `nmpa_buchongbeian`, `nmpa_reg_patent`, `nmpa_jinkou`, `drugreg_cn`, `yzpj_products`, `generic_cn`, `china_new_drugs`, `cde_yfb_registration`
+10 MCP-visible databases: `nmpa_gmp`, `nmpa_tcm_protection`, `nmpa_tcm_granules`, `nmpa_guochan`, `nmpa_buchongbeian`, `nmpa_reg_patent`, `nmpa_jinkou`, `drugreg_cn`, `yzpj_products`, `cde_yfb_registration`. `generic_cn` and `china_new_drugs` are hidden from MCP.
 
 ---
 
@@ -471,104 +471,14 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 
 ---
 
-## `generic_cn` — 仿制药立项调研
+## MCP-hidden — `generic_cn` / `china_new_drugs`
 
-**Category** 注册情报 · **Route type** `custom` · **Frontend** `/generic/cn` · **API path** `/generic/cn/list` · **Detail** yes
+**Do not query these via MCP.** `yaohai-catalog` omits them; `yaohai-search` / `yaohai-detail` / `yaohai-facets` reject them.
 
-*Catalog keywords:* 仿制药立项调研, 全球原研单方化药, 可仿制性
-
-| MCP tool | |
-|---|---|
-| Search | `yaohai-search` |
-| Field keys | — |
-| Facets | `yaohai-facets` (7) |
-| Detail | `yaohai-detail` |
-
-> **Rows are 原研剂型产品, not 批文.** Each carries `yzpj_passed` (已过评), `listing_num` (中国上市), `jicai_num` (国家集采), `markets` (FDA · EMA · PMDA · Canada · NMPA). `has_detail: true`. There is no company column — `enterprise` / `manufacture` are invalid.
-
-To find a company's consistency-evaluation *approvals*, use `product_cn` with `is_passed_yizhi` / `gj_passed_yizhi`. For first-pass variety status use `yzpj_products`.
-
-### Search fields
-
-| Key | Verified | Label |
+| Hidden dbname | Website still has | Use instead |
 |---|---|---|
-| `drug_name` | ✓ | 成分 / 通用名 |
-| `dosage_form` | ✓ | 剂型 |
-| `XUI` / `project_id` | | 项目 id（`project_id` aliases to `XUI`） |
-
-### Facet / filter fields
-
-SPA 条件筛选 (`ConditionSearchPanel.js`) and PHP `$allowed` are the same seven terms fields. `patent_expire_date` is a date picker — filter-only, not in `yaohai-facets`. `drug_type` is **not** a field (PHP returns `Unknown facet field`).
-
-| Key | Verified | Facetable | Label | Filter type |
-|---|---|---|---|---|
-| `market` | ✓ | ✓ | 上市国家 | multiple — `FDA` / `EMA` / `PMDA` / `Canada` / `NMPA` |
-| `dosage_form` | ✓ | ✓ | 药品剂型 | multiple — exact string or `string[]` |
-| `target` | | ✓ | 靶点 | multiple — copy the facet value verbatim |
-| `indication` | | ✓ | 适应症 | multiple — copy the facet value verbatim |
-| `is_nme` | | ✓ | 创新类型 | multiple — `"1"` = NME / 新活性, `"0"` = 其他原研 |
-| `first_approve_year` | | ✓ | 首次批准年 | multiple — year string; `year` aliases here |
-| `ATC_code` | | ✓ | ATC分类 | multiple — first-level letter (`C`, `L`, …) |
-| `patent_expire_date` | | | 专利到期 | date — `"YYYY-MM-DD to YYYY-MM-DD"` |
-
-```jsonc
-{"dbname": "generic_cn", "fields": ["market", "dosage_form"]}
-```
-
-### Examples
-
-**阿托伐他汀钙 片剂 — 1 条仿制药立项调研记录（不是批文）**
-
-```jsonc
-{"query": {"drug_name": "阿托伐他汀"}, "limit": 20}
-```
-
-**✗ Not a company database.** `enterprise` / `manufacture` are invalid keys (MCP error), not a full-catalogue result.
-
-```jsonc
-{"query": {"enterprise": "齐鲁制药"}, "limit": 20}
-```
-
----
-
-## `china_new_drugs` — 创新药研究报告
-
-**Category** 注册情报 · **Route type** `custom` · **Frontend** `/new/drugs/cn` · **API path** `/b/new/drug/cn/list` · **Detail** yes
-
-*Catalog keywords:* 创新药研究报告, 中国新药, 新药, 1类, 创新药, 单成分
-
-| MCP tool | |
-|---|---|
-| Search | `yaohai-search` |
-| Field keys | — |
-| Facets | `yaohai-facets` (6) |
-| Detail | `yaohai-detail` |
-
-> **Rows are XUI 实体（单成分化药/生物创新药）, not 受理号.** `has_detail: true` via `/global/drugs/detail`. There is no `item` box. PHP `$allowed` and SPA 条件筛选 are the same six terms. Do **not** use `GET /b/drugreg/cn/list/{field}` — that is `drugreg_cn`.
-
-### Search fields
-
-| Key | Verified | Label |
-|---|---|---|
-| `drug_name` | | 中英文药品名称 |
-| `indication` | | 适应症（字符串 LIKE；数组按 facet 精确匹配） |
-| `target` | | 靶点 |
-| `slh` | | 受理号（反查实体） |
-| `enterprise` | | 企业名称（反查实体） |
-| `XUI` | | 实体 id |
-
-### Facet / filter fields
-
-SPA 条件筛选 (`ConditionSearchPanel.js`) and PHP `$allowed` are the same six terms fields. `apply_type` / `dosage_form` / `ATC_code` / `transact_status` are **not** fields here (PHP returns `Unknown facet field`).
-
-| Key | Verified | Facetable | Label | Filter type |
-|---|---|---|---|---|
-| `rd_status` | ✓ | ✓ | 研发状态 | multiple — `研究中` / `已批准` |
-| `kind` | ✓ | ✓ | 新药类别 | multiple — `全新实体` / `新剂型` / `新适应症` |
-| `drug_type` | | ✓ | 药品类型 | multiple — exact string or `string[]` |
-| `target` | | ✓ | 靶点 | multiple — copy the facet value verbatim |
-| `indication` | | ✓ | 适应症 | multiple — copy the facet value verbatim |
-| `market` | ✓ | ✓ | 上市国家 | multiple — `FDA` / `EMA` / `PMDA` / `NMPA` |
+| `generic_cn` 仿制药立项调研 | `/generic/cn` | `yzpj_products`, `product_cn` (`is_passed_yizhi` / `gj_passed_yizhi`), `cn_reference_drugs` |
+| `china_new_drugs` 创新药研究报告 | `/new/drugs/cn` | `reg_cn` |
 
 ---
 

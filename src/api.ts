@@ -6,6 +6,7 @@ import { normalizeRecord, parseFacetList, stripMcpFields, usableDetailUrl } from
 import type { FacetField } from "./fields.js";
 import { attachAtcLetter } from "./fields.js";
 import { ENVIRONMENT_FINGERPRINT } from "./environment.js";
+import { isMcpHiddenDb, mcpHiddenDbMessage } from "./hidden-dbs.js";
 
 export class MissingTokenError extends Error {
   constructor(message?: string) {
@@ -63,11 +64,11 @@ export class ApiError extends Error {
 
 export function getBaseUrl(): string {
   return (
-    process.env.YAOHAI_BASE_URL || "https://db3.drugsea.cn/api"
+    process.env.YAOHAI_BASE_URL || "https://db.drugsea.cn/api"
   ).replace(/\/$/, "");
 }
 
-/** db3 serves list/facet GET as encrypted payloads; use POST /g/mcp/yaohai/search instead. */
+/** List/facet GET may return encrypted payloads; default to POST /g/mcp/yaohai/search. */
 export function prefersMcpListApi(): boolean {
   const flag = process.env.YAOHAI_USE_MCP_LIST?.trim().toLowerCase();
   if (["1", "true", "yes", "on"].includes(flag ?? "")) {
@@ -76,7 +77,7 @@ export function prefersMcpListApi(): boolean {
   if (["0", "false", "no", "off"].includes(flag ?? "")) {
     return false;
   }
-  return getBaseUrl().includes("db3.drugsea.cn");
+  return true;
 }
 
 export function getVerifySsl(): boolean {
@@ -245,7 +246,7 @@ function parseApiJson(status: number, text: string): ApiResult {
       ok: false,
       status,
       error:
-        "Encrypted or non-JSON API payload (db3 list/facet GET). Use YAOHAI_BASE_URL=https://db3.drugsea.cn/api so product-cn-search/reg-cn-search route via MCP POST, or set YAOHAI_USE_MCP_LIST=true.",
+        "Encrypted or non-JSON API payload (list/facet GET). Use YAOHAI_BASE_URL=https://db.drugsea.cn/api and YAOHAI_USE_MCP_LIST=true so product-cn-search/reg-cn-search route via MCP POST.",
       raw: data,
     };
   }
@@ -347,6 +348,9 @@ export async function mcpDbSearch(opts: {
   offset: number;
   viewType?: string;
 }): Promise<Record<string, unknown>> {
+  if (isMcpHiddenDb(opts.dbname)) {
+    throw new Error(mcpHiddenDbMessage(opts.dbname));
+  }
   const query: QueryObject = { ...opts.query };
   if (opts.viewType && opts.viewType !== "eslist") {
     query.view_type = opts.viewType;
@@ -408,6 +412,9 @@ export async function mcpDbOutput(opts: {
   query: QueryObject;
   viewType?: string;
 }): Promise<Record<string, unknown>> {
+  if (isMcpHiddenDb(opts.dbname)) {
+    throw new Error(mcpHiddenDbMessage(opts.dbname));
+  }
   const query: QueryObject = { ...opts.query };
   if (opts.viewType && opts.viewType !== "eslist") {
     query.view_type = opts.viewType;
@@ -424,6 +431,9 @@ export async function mcpDbDetail(
   dbname: string,
   id: string
 ): Promise<Record<string, unknown>> {
+  if (isMcpHiddenDb(dbname)) {
+    throw new Error(mcpHiddenDbMessage(dbname));
+  }
   const content = (await yaohaiPost("/g/mcp/yaohai/detail", {
     dbname,
     id,

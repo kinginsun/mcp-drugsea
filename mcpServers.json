@@ -6,7 +6,9 @@
       "command": {
         "args": ["npx", "-y", "@kinginsun/mcp-drugsea@latest"],
         "env": {
-          "YAOHAI_MCP_TOKEN": "${YAOHAI_MCP_TOKEN}"
+          "YAOHAI_MCP_TOKEN": "${YAOHAI_MCP_TOKEN}",
+          "YAOHAI_BASE_URL": "https://db.drugsea.cn/api",
+          "YAOHAI_USE_MCP_LIST": "true"
         }
       },
       "capabilities": {

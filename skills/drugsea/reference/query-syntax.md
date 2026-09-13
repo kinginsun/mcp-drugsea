@@ -102,7 +102,7 @@ Because the docs under-report, prefer keys you have seen work. The per-database
 
 ## `search_mode` semantics
 
-`search_mode` exists on `product_cn`, `reg_cn`, `drugreg_cn` and `generic_cn`. It is
+`search_mode` exists on `product_cn`, `reg_cn` and `drugreg_cn`. It is
 applied **before** the query is built and rewrites which field key your keyword targets and
 whether the value is a string or an array. It is not a match-type switch.
 
@@ -121,7 +121,7 @@ the in-query form so older servers still work:
 | `2` | 完整匹配 / exact | Wraps the value as a single-element array → `terms` on `drug_name.keyword`. Exact whole-value match. Also exact-matches `enterprise` and `slh` on `reg_cn`. |
 | `3` | 部分匹配 / partial | Leaves the value as a string → `match_phrase` on `drug_name`. Token/substring match. |
 
-On the MySQL-engine databases (`drugreg_cn`, `generic_cn`) the same 1/2/3 values map to
+On the MySQL-engine databases (`drugreg_cn`) the same 1/2/3 values map to
 `exact = 0 / 1 / 2`, which selects between a `FULLTEXT … IN BOOLEAN MODE` lookup, a `LIKE`
 join on the name index, and a `LIKE '%…%'` substring match.
 
@@ -190,7 +190,7 @@ Three tools produce facet distributions, and they do not share a coverage model:
 |---|---|---|
 | `product-cn-facets` | `product_cn` | 22 (17 multiple, 2 date, 3 range) |
 | `reg-cn-facets` | `reg_cn` | 22 (17 multiple, 2 date, 3 range) |
-| `yaohai-facets` | 58 databases (`/in` + dedicated-route) | 209, **`terms` only** (+ static SPA lists) |
+| `yaohai-facets` | 56 databases (`/in` + dedicated-route; `china_new_drugs` / `generic_cn` hidden) | 196, **`terms` only** (+ static SPA lists) |
 
 Facets use the same `query` object as the search, with two differences:
 
@@ -226,7 +226,7 @@ Related errors, all of them loud:
 Omit `fields` and the tool describes what it can aggregate instead of aggregating:
 
 ```jsonc
-{}                              // all 58 databases, their titles, categories, field names
+{}                              // all 56 databases, their titles, categories, field names
 {"dbname": "yibao"}             // one database: facet_count, facet_prefix, fields + titles
 ```
 
@@ -238,7 +238,7 @@ reject) and can be a subset in others.
 ### Cost model: one HTTP request per field
 
 `fetchFacets` loops `for (const field of opts.fields)` and issues a separate GET for each.
-Asking for everything means 209 requests. Request the 2–4 dimensions you will actually
+Asking for everything means 196 requests. Request the 2–4 dimensions you will actually
 use — the same discipline the dedicated tools need (5–6 max of their 22).
 
 ### Per-database injected query
@@ -374,7 +374,7 @@ The per-database `db-*.md` facet tables carry a **Facetable** column:
 
 Every list page has 条件筛选. **Source of truth is the frontend route's
 `ConditionSearchPanel.js`** (`queryKey` on **rendered** panels). `yaohai-facets`
-fetches **terms** buckets for 58 databases (44 `/in` + dedicated-route pages). Date
+fetches **terms** buckets for 56 databases (44 `/in` + dedicated-route pages). Date
 pickers are still not fetchable. `product_cn` / `reg_cn` keep dedicated tools.
 
 | dbname | SPA `queryKey` (rendered terms) | `yaohai-facets` |
@@ -390,8 +390,6 @@ pickers are still not fetchable. `product_cn` / `reg_cn` keep dedicated tools.
 | `product_us` | `ApplyType`, `year`, `ReviewPriorityOrphanStatus`, `MarketingStatus`, `RLD`, `SubmissionClassification`, `drug_type`, `InnovatorOrGeneric` | ✓ `GET /fda_drugs/eslist/{field}` |
 | `sales_cn` | `years`, `quarter`, `drug_type`, `administration_route`, `ATC_code`, `city` | ✓ static SPA list (`count` null) |
 | `sales_global` | `years`, `source` | ✓ static SPA list (`count` null) |
-| `china_new_drugs` | `rd_status`, `kind`, `drug_type`, `target`, `indication`, `market` | ✓ `GET /b/new/drug/cn/list/{field}` |
-| `generic_cn` | `market`, `dosage_form`, `target`, `indication`, `is_nme`, `first_approve_year`, `ATC_code` | ✓ `GET /generic/cn/list/{field}` |
 | `drugreg_cn` | 16 terms `is_condition` fields | ✓ `GET /drugreg_cn/aggs/filter/{field}` |
 | `global_search` | `dbname` | not in catalog (parent-supplied list) |
 | `medical_device_beian` / `_jinkou_beian` | `filing_date` | date picker only — not in catalog |
@@ -457,8 +455,8 @@ valid date. A well-formed bare value never errors. So:
 > 400 = your value is malformed for that field's type. 0 results = value is well-formed but
 > nothing matches. Silent full-DB return = the field *key* is unknown.
 
-MySQL-engine databases include `yzpj_products`, `generic_cn`, `china_new_drugs`,
-`sales_cn`, `sales_global`, `global_search`.
+MySQL-engine databases include `yzpj_products`,
+`sales_cn`, `sales_global`, `global_search`. (`generic_cn` / `china_new_drugs` are hidden from MCP.)
 
 ### 3. Aggregation engine (`route_type: aggs`)
 

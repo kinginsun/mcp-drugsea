@@ -2,14 +2,16 @@
 name: drugsea
 description: >-
   药海/Yaohai：国内上市、国药准字、批准文号、注册审评、CDE受理、在研、医保、集采、临床试验。
-  One-stop search across all 63 DrugSea databases via the user-drugsea MCP tools.
+  One-stop search across DrugSea databases via the user-drugsea MCP tools
+  (`china_new_drugs` and `generic_cn` are hidden — do not query them).
   Covers marketed vs pipeline routing, field meanings, accepted value types,
   facet filtering, ATC therapeutic classes, and detail drill-down.
 ---
 
 # DrugSea / 药海遨游 one-stop search
 
-DrugSea exposes 63 pharmaceutical databases. All of them are reachable through the
+DrugSea exposes pharmaceutical databases (MCP catalog is 61; `china_new_drugs` and
+`generic_cn` are hidden and must not be queried). All of the visible ones are reachable through the
 `user-drugsea` MCP namespace. This skill is documentation only — it tells you which
 database to hit, which field keys to use, and what value shape each field accepts.
 There are no scripts to run.
@@ -67,7 +69,7 @@ getting it wrong sends you to a call that cannot succeed:
 | ≤ 0.2.1 | absent | **present** | unavailable |
 | 0.3.0 | absent | absent | unavailable |
 | 0.4.0–0.9.x | **present** | absent | `/in` dbs only (44) |
-| ≥ 0.10.0 | **present** | absent | 58 dbs / 209 terms (dedicated-route + static lists) |
+| ≥ 0.10.0 | **present** | absent | 56 dbs / 196 terms (dedicated-route + static lists; `china_new_drugs` / `generic_cn` hidden) |
 
 Note `yaohai-smart-search` was removed back in **v0.3.0**, so its presence means the session
 is *older* than 0.3.0 — it is a tell for "quite stale", not a marker of 0.3.0 itself. Either
@@ -104,7 +106,7 @@ MCP **bucket-fetch** (value/count distributions) is a narrower wrapper on top of
 |---|---|---|
 | `product-cn-facets` | `product_cn` only | 22 (17 multiple, 2 date, 3 range) |
 | `reg-cn-facets` | `reg_cn` only | 22 (17 multiple, 2 date, 3 range) |
-| `yaohai-facets` | **58** databases (`/in` + dedicated-route 条件筛选) | 209, **`terms` only** (+ hardcoded SPA lists) |
+| `yaohai-facets` | **56** databases (`/in` + dedicated-route 条件筛选; `china_new_drugs` / `generic_cn` hidden) | 196, **`terms` only** (+ hardcoded SPA lists) |
 
 `yaohai-facets` is dual-mode, and the mode depends only on whether `fields` is present:
 
@@ -131,7 +133,7 @@ Rules that cost you a failed call if ignored:
 - **`drugsales` is the only database with an auto-injected query**: `groupid=205` is merged
   into every facet call and appears in `query_applied`. Your own `query` value overrides it.
 
-`yaohai-facets` fetches buckets for those 58 catalogs. Dedicated-route dbnames
+`yaohai-facets` fetches buckets for those 56 catalogs. Dedicated-route dbnames
 (`zhaobiao`, `ct_cn`, `product_us`, `sales_cn`, …) are included. `sales_cn` /
 `sales_global` return hardcoded SPA lists (`count` is null). Date pickers
 (器械备案 `filing_date`, …) are still not in the catalog. `product_cn` / `reg_cn`
@@ -153,7 +155,7 @@ A drug can appear in both: `product_cn` holds approved marketing authorizations,
 `reg_cn` holds every CDE submission (including ones that later became approved).
 For "what's the competitive landscape of X", query **both** and say which came from where.
 
-## Second decision: which of the 63 databases
+## Second decision: which of the MCP-visible databases
 
 | If the question is about… | dbname | Reference file |
 |---|---|---|
@@ -176,10 +178,10 @@ For "what's the competitive landscape of X", query **both** and say which came f
 | HK marketed drugs (Department of Health) | `hk_doh` | [db-marketed.md](reference/db-marketed.md) |
 | Macau marketed drugs | `isaf_drugs` | [db-marketed.md](reference/db-marketed.md) |
 | Macau TCM & natural drugs | `isaf_tcm` | [db-marketed.md](reference/db-marketed.md) |
-| 仿制药立项调研 | `generic_cn` | [db-registration.md](reference/db-registration.md) |
-| 创新药研究报告 (中国新药) | `china_new_drugs` | [db-registration.md](reference/db-registration.md) |
 | 【随心汇】注册审评聚合 | `drugreg_cn` | [db-registration.md](reference/db-registration.md) |
 | 一致性评价品种 (first-pass) | `yzpj_products` | [db-registration.md](reference/db-registration.md) |
+| 仿制药立项调研 (`generic_cn`, MCP hidden) | — do not query — | `yzpj_products` / `product_cn` (`is_passed_yizhi`) |
+| 创新药研究报告 (`china_new_drugs`, MCP hidden) | — do not query — | `reg_cn` |
 | 原辅包 (CDE YFB) 登记 | `cde_yfb_registration` | [db-registration.md](reference/db-registration.md) |
 | 国产药品批准文号 (NMPA) | `nmpa_guochan` | [db-registration.md](reference/db-registration.md) |
 | 进口药品注册证 (NMPA) | `nmpa_jinkou` | [db-registration.md](reference/db-registration.md) |
@@ -221,9 +223,9 @@ For "what's the competitive landscape of X", query **both** and say which came f
 | 上市公司公告 | `se_notice` | [db-reference-news.md](reference/db-reference-news.md) |
 | 药政法规 | `drug_law` | [db-reference-news.md](reference/db-reference-news.md) |
 
-Categories and their database counts (from `yaohai-catalog`): 上市情报 15, NMPA基础库 13,
-行业参考 7, 注册情报 6, 市场情报 6, 市场准入 5, 药政参考 4, 药闻速递 3, 临床试验 2,
-综合 1, 其他 1 — **63 total**.
+Categories and their database counts (from `yaohai-catalog`, MCP-visible): 上市情报 15, NMPA基础库 13,
+行业参考 7, 市场情报 7, 市场准入 5, 注册情报 4, 药政参考 4, 药闻速递 3, 临床试验 2,
+综合 1 — **61 visible**. `china_new_drugs` and `generic_cn` are hidden from MCP.
 
 ## How to prepare keywords (your job, not a tool's)
 
@@ -241,7 +243,7 @@ Before calling a search tool, do this normalization yourself:
    switch to `drug_name` / `enterprise` / `auth_num` when you need to narrow.
 4. **Prefer facets over guessed values.** Never invent a facet value such as
    `register_type=化药3类`. Fetch it first — `product-cn-facets` / `reg-cn-facets` for
-   those two databases, `yaohai-facets` for the other 58 — and copy the exact string.
+   those two databases, `yaohai-facets` for the other 56 — and copy the exact string.
 5. **Use ATC letters for therapeutic areas.** Disease questions ("oncology drugs",
    "降糖药") map to an ATC first-level letter, not a keyword. See
    [atc-therapeutic-classes.md](reference/atc-therapeutic-classes.md).
@@ -305,6 +307,7 @@ returns `download_url` (plus `oss_url`). It never streams a binary file. If
 
 ## Gotchas
 
+- **Do not query `china_new_drugs` or `generic_cn`.** They are hidden from MCP catalog, search, detail, and facets. 仿制药 → `yzpj_products` / `product_cn` (`is_passed_yizhi`). 创新药管线 → `reg_cn`.
 - **`product_cn` defaults to `search_mode=3` (partial match); `reg_cn` defaults to
   `search_mode=1` (related).** Same keyword, different result sets. Set it explicitly
   when comparing across the two.
@@ -376,16 +379,6 @@ returns `download_url` (plus `oss_url`). It never streams a binary file. If
   `auth_num`, `brand_name`, `indication`. `general_name_cn` is not a keyword box.
   「仅有效文号」is `only_active=1`; default `search_mode=3`. `in_sfda=0` on eslist
   returns invalid approvals. ATC letters include **Z=中药（非 WHO）** and **W=原料药**.
-- **`generic_cn` keyword keys match the SPA panel:** `drug_name`（成分/通用名）,
-  `dosage_form`. 条件筛选 is `market`（FDA/EMA/PMDA/Canada/NMPA）, `target`,
-  `indication`, `is_nme`, `first_approve_year`, `ATC_code`. No `item` box; no
-  `drug_type`; `enterprise` / `manufacture` are invalid. `year` aliases to
-  `first_approve_year`; `project_id` aliases to `XUI`.
-- **`china_new_drugs` keyword keys match the SPA panel:** `drug_name`（中英文药品名称）,
-  `enterprise`, `slh`, `indication`, `target`. 条件筛选 is `rd_status`（研究中/已批准）,
-  `kind`（全新实体/新剂型/新适应症）, `drug_type`, `target`, `indication`,
-  `market`（FDA/EMA/PMDA/NMPA）. No `item` box; no `ATC_code` / `apply_type` /
-  `dosage_form`. Prefix is `/b/new/drug/cn/list`, not `drugreg_cn`.
 - **Malformed ranges do the opposite: they hard-error with HTTP 400.**
   `"20-50"` → `number_format_exception`; `"2024/01/01-2024-12-31"` → `parse_exception`.
   Only `"A to B"` is accepted. A 400 means your syntax was wrong, not that the filter

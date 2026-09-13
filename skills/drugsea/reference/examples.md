@@ -315,7 +315,7 @@ Cross-check in the dedicated database:
 
 ## 12. "阿托伐他汀通过一致性评价了吗"
 
-**Routing.** 一致性评价 → `product_cn` flags, or `generic_cn` for variety-level counts.
+**Routing.** 一致性评价 → `product_cn` flags, or `yzpj_products` for first-pass variety status. Do **not** query `generic_cn` (hidden from MCP).
 
 `product_cn` has a **virtual OR field** for this:
 
@@ -327,21 +327,15 @@ Cross-check in the dedicated database:
 `gj_passed_yizhi=1` matches `is_passed_yizhi=1 OR is_orange_book=1` — it is not a stored
 column. That is why 117 < ~279: only the passed/orange-book subset.
 
-For the variety-level rollup:
+For the variety-level first-pass rollup:
 
 ```jsonc
-// yaohai-search dbname=generic_cn
-{"query": {"drug_name": "阿托伐他汀"}, "limit": 20}   // → 7 varieties
+// yaohai-search dbname=yzpj_products
+{"query": {"drug_name": "阿托伐他汀"}, "limit": 20}
 ```
 
-Rows carry `yzpj_passed` (已过评), `yzpj_not_passed`, `listing_num`, `jicai_num`,
-`reference_drug_num`.
-
-**`generic_cn` has no company column.** Keyword key is `drug_name`; SPA 条件筛选 is
-`market` / `dosage_form` / `target` / `indication` / `is_nme` / `first_approve_year` /
-`ATC_code`. `enterprise` / `manufacture` are rejected. For "company X's
-consistency-evaluation products", use `product_cn` with `manufacture` plus
-`is_passed_yizhi` instead.
+For a company's consistency-evaluation products, use `product_cn` with `manufacture` plus
+`is_passed_yizhi` / `gj_passed_yizhi`. Do not query `generic_cn`.
 
 ---
 
@@ -389,8 +383,8 @@ For a window, use the range grammar:
 `innovation_degree` values are 创新型 / 改良型 / 仿制型 / 其他 — copy verbatim from a facet
 call if unsure.
 
-Pair with `china_new_drugs` for 1类/创新药 specifically, and `nmpa_buchongbeian` for
-补充申请备案.
+Pair with `reg_cn` (`innovation_degree`) for 1类/创新药 specifically, and `nmpa_buchongbeian` for
+补充申请备案. Do not query `china_new_drugs` (hidden from MCP).
 
 ---
 

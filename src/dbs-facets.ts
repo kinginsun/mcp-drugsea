@@ -51,19 +51,6 @@ export const DBS_FACET_CATALOG: Record<string, DbsFacetEntry> = {
       yfb_type: { title: "原辅包类型", filter_type: "multiple" },
     },
   },
-  china_new_drugs: {
-    title: "创新药研究报告",
-    category: "注册情报",
-    prefix: "/b/new/drug/cn/list",
-    fields: {
-      rd_status: { title: "研发状态", filter_type: "multiple" },
-      kind: { title: "新药类别", filter_type: "multiple" },
-      drug_type: { title: "药品类型", filter_type: "multiple" },
-      target: { title: "靶点", filter_type: "multiple" },
-      indication: { title: "适应症", filter_type: "multiple" },
-      market: { title: "上市国家", filter_type: "multiple" },
-    },
-  },
   cmchk_pcm: {
     title: "香港注册中成药",
     category: "上市情报",
@@ -224,20 +211,6 @@ export const DBS_FACET_CATALOG: Record<string, DbsFacetEntry> = {
       ROUTENAME: { title: "给药途径", filter_type: "multiple" },
       NDC_EXCLUDE_FLAG: { title: "NDC排除标记", filter_type: "multiple" },
       PHARM_CLASSES: { title: "药理分类", filter_type: "multiple" },
-    },
-  },
-  generic_cn: {
-    title: "仿制药立项调研",
-    category: "注册情报",
-    prefix: "/generic/cn/list",
-    fields: {
-      market: { title: "上市国家", filter_type: "multiple" },
-      dosage_form: { title: "药品剂型", filter_type: "multiple" },
-      target: { title: "靶点", filter_type: "multiple" },
-      indication: { title: "适应症", filter_type: "multiple" },
-      is_nme: { title: "创新类型", filter_type: "multiple" },
-      first_approve_year: { title: "首次批准年", filter_type: "multiple" },
-      ATC_code: { title: "ATC分类", filter_type: "multiple" },
     },
   },
   gov_drugs: {

@@ -9,10 +9,10 @@ skill shipped under this repo's `skills/` directory.
 
 | What | Why | Where it comes from |
 |---|---|---|
-| `@kinginsun/mcp-drugsea` MCP server | 13 tools that search all 63 DrugSea / 药海遨游 pharmaceutical databases (approvals, CDE reviews, trials, sales, tenders, 医保/集采, patents, companies, news…) | npm (`npx -y @kinginsun/mcp-drugsea@latest`) |
+| `@kinginsun/mcp-drugsea` MCP server | 13 tools that search the 61 MCP-visible DrugSea / 药海遨游 pharmaceutical databases (approvals, CDE reviews, trials, sales, tenders, 医保/集采, patents, companies, news…). `china_new_drugs` and `generic_cn` are hidden. | npm (`npx -y @kinginsun/mcp-drugsea@latest`) |
 | `drugsea` skill | Teaches you *how to use those tools correctly*: database routing, field keys, facet discovery, query value grammar, and ~20 gotchas (silent query drops, version tells, `has_detail: false` DBs) | this repo, `skills/drugsea/` (NOT bundled in the npm package) |
 | `echarts` skill | Chart/visualization guidance (ECharts 6.x option configs, dataset best practices, SSR) plus bundled `references/`, `templates/`, and a `scripts/generate_chart.py` helper — presents DrugSea query results (sales, 集采, trial trends…) as charts | this repo, `skills/echarts/` (NOT bundled in the npm package) |
-| `drug-project-initiation` skill | 药品立项调研报告：仿制/改良立项、可行性评估、FTO、竞争格局、市场准入。Pulls PubChem identity + 2D structure, collects evidence from the 63 DrugSea DBs, scores P1/P2/P3, draws ECharts figures, and assembles a print-ready A4 HTML report | this repo, `skills/drug-project-initiation/` (NOT bundled in the npm package) |
+| `drug-project-initiation` skill | 药品立项调研报告：仿制/改良立项、可行性评估、FTO、竞争格局、市场准入。Pulls PubChem identity + 2D structure, collects evidence from the MCP-visible DrugSea DBs, scores P1/P2/P3, draws ECharts figures, and assembles a print-ready A4 HTML report | this repo, `skills/drug-project-initiation/` (NOT bundled in the npm package) |
 
 Install **all four**. The server without the skills leaves you guessing field
 names; the skills without the server have nothing to call. `drug-project-initiation`
@@ -80,7 +80,9 @@ every launch (a bare package name pins npx's cache and serves stale builds).
       "command": "npx",
       "args": ["-y", "@kinginsun/mcp-drugsea@latest"],
       "env": {
-        "YAOHAI_MCP_TOKEN": "ysk_REPLACE_ME"
+        "YAOHAI_MCP_TOKEN": "ysk_REPLACE_ME",
+        "YAOHAI_BASE_URL": "https://db.drugsea.cn/api",
+        "YAOHAI_USE_MCP_LIST": "true"
       }
     }
   }
@@ -103,7 +105,7 @@ Restart Claude Desktop afterwards.
 ### Claude Code (CLI)
 
 ```bash
-claude mcp add drugsea -e YAOHAI_MCP_TOKEN=ysk_REPLACE_ME -- npx -y @kinginsun/mcp-drugsea@latest
+claude mcp add drugsea -e YAOHAI_MCP_TOKEN=ysk_REPLACE_ME -e YAOHAI_BASE_URL=https://db.drugsea.cn/api -e YAOHAI_USE_MCP_LIST=true -- npx -y @kinginsun/mcp-drugsea@latest
 claude mcp list   # verification gate
 ```
 
@@ -113,7 +115,7 @@ claude mcp list   # verification gate
 [mcp_servers.drugsea]
 command = "npx"
 args = ["-y", "@kinginsun/mcp-drugsea@latest"]
-env = { YAOHAI_MCP_TOKEN = "ysk_REPLACE_ME" }
+env = { YAOHAI_MCP_TOKEN = "ysk_REPLACE_ME", YAOHAI_BASE_URL = "https://db.drugsea.cn/api", YAOHAI_USE_MCP_LIST = "true" }
 ```
 
 ### Generic / other MCP clients
@@ -224,7 +226,7 @@ Then confirm your host actually picked all three up: they should appear in your
 available-skills list (Cursor/Claude may need a window reload). Their trigger
 descriptions start with:
 
-- `drugsea` — *"One-stop search across all 63 DrugSea / 药海遨游…"* / *"药海/Yaohai：国内上市…"*
+- `drugsea` — *"One-stop search across DrugSea databases…"* / *"药海/Yaohai：国内上市…"*
 - `echarts` — *"Guide for creating data visualizations and charts using Apache ECharts…"*
 - `drug-project-initiation` — *"药品立项调研报告：仿制/改良立项、可行性评估、FTO…"*
 
@@ -289,8 +291,8 @@ Summarize what you installed:
 | Forbidden on one specific database | Token inherits account permissions — check the subscription on db.drugsea.cn, not the MCP client |
 | `yaohai-facets` missing / `yaohai-smart-search` present | Stale npx cache serving an old version — confirm `args` contains `@latest`, then `npm cache npx ls` / `npm cache npx rm <key>` (or `rm -rf ~/.npm/_npx`) and reload the server |
 | `mcp-drugsea: command not found` under npx | You ran the smoke test inside this repo's source dir — run it elsewhere, or `npm install && npm run build` then `node dist/index.js` |
-| Empty/encrypted payload from product/reg GET routes | Use the default `https://db3.drugsea.cn/api` base URL (auto-routes through MCP POST), or set `YAOHAI_USE_MCP_LIST=true` |
-| Search tools fail with `HTTP 504` / `HTML, not JSON` / `Unexpected token '<'` | Gateway timeout on `POST /g/mcp/yaohai/search` (catalog + facets can still pass). Direct GET list routes may be healthy while MCP search hangs. Wait for db3 to recover; do not `--yes` a publish over it |
+| Empty/encrypted payload from product/reg GET routes | Keep default `YAOHAI_USE_MCP_LIST=true` (MCP POST). Set `YAOHAI_BASE_URL=https://db.drugsea.cn/api` |
+| Search tools fail with `HTTP 504` / `HTML, not JSON` / `Unexpected token '<'` | `db3.drugsea.cn` gateway times out around 50s. Use `YAOHAI_BASE_URL=https://db.drugsea.cn/api`. If already on db, retry; do not `--yes` a publish over a hang |
 | TLS errors on some hosts | Set `YAOHAI_VERIFY_SSL=false` in the server `env` |
 | Skill never triggers | Host didn't index the skills dir — reload the window; confirm the path is the one your host scans (`~/.cursor/skills/`, `~/.claude/skills/`, or the project-level equivalent) and that `SKILL.md` has its YAML frontmatter intact |
 | `drug-project-initiation` missing after copy | You copied only `drugsea` and `echarts` from an older playbook — re-run Step 2 with `cp -R …/skills/*` so every folder lands in `<SKILLS_DIR>` |

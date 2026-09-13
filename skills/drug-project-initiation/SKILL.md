@@ -3,7 +3,7 @@ name: drug-project-initiation
 description: >-
   药品立项调研报告：仿制/改良立项、可行性评估、FTO 专利自由实施、竞争格局、市场准入。
   Produces a print-ready A4 HTML due-diligence report for a drug product: pulls
-  chemical identity and 2D structure from PubChem, collects evidence from the 63
+  chemical identity and 2D structure from PubChem, collects evidence from the MCP-visible
   DrugSea databases via the `user-drugsea` MCP namespace, scores the variety on three
   independent probabilities (可获批 / 可合法上市 / 值得做), draws ECharts figures, and
   assembles 封皮 / 目录 / 正文 / 参考文献 / 封底. Use when the user asks for 立项调研、
@@ -51,11 +51,11 @@ M1–M10 一律通过 `user-drugsea` MCP；路由与字段键查 `skills/drugsea
 |---|---|---|
 | M0 化学与结构 | CID/CAS/分子式/MW/IUPAC/SMILES/InChI + 2D 结构图 | **PubChem**（脚本） |
 | M1 品种身份 | 通用名/商品名/文号/持证商/剂型规格/ATC/包装 | `product_cn`、`product_jp`、`nhsa_code` |
-| M2 参比与路径 | 参比批次编号规格来源、过评数、BE 数、申报类别 | `cn_reference_drugs`、`generic_cn`、`yzpj_products` |
+| M2 参比与路径 | 参比批次编号规格来源、过评数、BE 数、申报类别 | `cn_reference_drugs`、`yzpj_products`、`product_cn` (`is_passed_yizhi`) |
 | M3 申报竞争 | 4 类受理号、企业清单、首仿标记、状态/剂型分面 | `reg_cn`、`ct_cn` |
 | M4 专利（决定 P2） | 登记专利、权利类型、到期日、声明类型分布 | `zldj`、`zlsm`、`nmpa_reg_patent` |
 | M5 原料与技术 | 原辅包登记家数与状态、境外 DMF | `cde_yfb_registration`、`fda_dmf` |
-| M6 临床定位 | 对照药、III 期结论、同类替代基线 | `ct_global`、`ct_cn`、`generic_cn` |
+| M6 临床定位 | 对照药、III 期结论、同类替代基线 | `ct_global`、`ct_cn` |
 | M7 市场准入 | 医保身份与编码、基药、集采、招标挂网价 | `yibao`、`nhsa_code`、`jiyao`、`jicai`、`zhaobiao` |
 | M8 销售 | 国内医院销售、境外全终端销售与渠道结构 | `sales_cn`、`drugsales` |
 | M9 全球对照 | 各地区上市状态、境外仿制 | `product_jp`、`product_us`、`product_eu` |
