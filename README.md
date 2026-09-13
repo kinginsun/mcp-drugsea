@@ -226,7 +226,7 @@ For the two dedicated ES routes use `product-cn-facets` / `reg-cn-facets` instea
 
 ## Quick start for AI Agents (install, configure, test)
 
-> **Agents: prefer [`AGENT_SETUP.md`](AGENT_SETUP.md).** It is the full install playbook and additionally covers installing the companion `drugsea` skill (`skills/drugsea/`), which teaches correct tool routing, field keys, facets, and query gotchas across all 63 databases. The section below installs the server only.
+> **Agents: prefer [`AGENT_SETUP.md`](AGENT_SETUP.md).** It is the full install playbook and additionally covers installing every companion skill under `skills/` (`drugsea`, `echarts`, `drug-project-initiation`). `drugsea` teaches correct tool routing, field keys, facets, and query gotchas across all 63 databases; `echarts` covers charts; `drug-project-initiation` produces 立项调研 HTML reports. The section below installs the server only.
 
 This section is a step-by-step playbook an AI agent (or a human) can follow to install, configure, and verify this MCP server end to end.
 
@@ -358,6 +358,7 @@ After reloading MCP servers in the client, ask the agent:
 | Permission/forbidden on a specific DB | Token inherits account permissions — check the account's subscription on db.drugsea.cn |
 | `mcp-drugsea: command not found` when running npx | You are inside the package source dir — run from another directory or use `node dist/index.js` |
 | Empty/encrypted payload from product/reg GET | Use default db3 base URL (auto MCP POST routing) or set `YAOHAI_USE_MCP_LIST=true` |
+| Search tools fail with `HTTP 504` / HTML body / `Unexpected token '<'` | Gateway timeout on `POST /g/mcp/yaohai/search`. Catalog/facets can still pass. Server-side hang — retry later; do not publish over it |
 | TLS errors on some hosts | Set `YAOHAI_VERIFY_SSL=false` |
 | Client keeps running an old version | npx cache is keyed by the exact package arg — use `@latest` in `args`, or clear it with `npm cache npx ls` / `npm cache npx rm <key>`. See [Updating](#updating). |
 | Global install never updates | `npm install -g` pins the version — run `npm update -g @kinginsun/mcp-drugsea` |

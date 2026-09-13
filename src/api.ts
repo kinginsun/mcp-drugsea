@@ -202,15 +202,36 @@ type ApiFailure = {
 
 export type ApiResult = ApiSuccess | ApiFailure;
 
+/** Gateway HTML (nginx 504, SPA 404) must not be reported as a JSON SyntaxError. */
+function describeNonJsonBody(status: number, text: string): string {
+  const trimmed = text.trim();
+  const htmlHeading =
+    trimmed.match(/<h1[^>]*>\s*([^<]+?)\s*<\/h1>/i)?.[1] ??
+    trimmed.match(/<title[^>]*>\s*([^<]+?)\s*<\/title>/i)?.[1];
+  if (trimmed.startsWith("<")) {
+    const label = (htmlHeading || "HTML error page").replace(/\s+/g, " ");
+    if (status === 504) {
+      return (
+        `DrugSea API returned HTTP 504 ${label} (HTML, not JSON). ` +
+        "POST /g/mcp/yaohai/search (and global-search/detail) timed out at the gateway. " +
+        "This is a server-side hang, not a token or field-key problem. Retry later; do not publish over it."
+      );
+    }
+    return `DrugSea API returned HTTP ${status} ${label} (HTML, not JSON).`;
+  }
+  const snippet = trimmed.replace(/\s+/g, " ").slice(0, 180);
+  return `Failed to parse API response (HTTP ${status}): ${snippet || String(status)}`;
+}
+
 function parseApiJson(status: number, text: string): ApiResult {
   let data: unknown;
   try {
     data = JSON.parse(text);
-  } catch (error) {
+  } catch {
     return {
       ok: false,
       status,
-      error: `Failed to parse API response: ${String(error)}`,
+      error: describeNonJsonBody(status, text),
     };
   }
 
