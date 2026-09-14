@@ -164,8 +164,8 @@ Direct GET list routes may return encrypted payloads; this client defaults to ro
 | Already listed in China (国药准字, 批准文号, 上市, 医保/集采状态) | `product-cn-fields` → `product-cn-search` / `product-cn-facets` → `product-cn-detail` |
 | R&D / CDE (在研, 受理号, 审评, 尚未上市) | `reg-cn-fields` → `reg-cn-search` / `reg-cn-facets` → `reg-cn-detail` |
 | Other DBs (医保 `yibao`, 基药 `jiyao`, 集采 `jicai`, trials, DMF, …) | `yaohai-catalog` → `yaohai-search` / `yaohai-facets` → `yaohai-detail` |
-| Global panorama | `yaohai-global-search` |
-| Unclear which DB | `yaohai-catalog` (list DBs by keyword/category) → `yaohai-search`, or `yaohai-global-search` |
+| Global / 全库 hit counts | `yaohai-global-search` |
+| Unclear which DB | `yaohai-catalog` (list DBs by keyword/category) → `yaohai-search`, or `yaohai-global-search` to see which DBs have hits |
 
 Therapeutic-class queries (抗癌, 心血管, …): prefer ConditionSearch `ATC_code` (letter, e.g. `L` oncology, `C` cardiovascular, `J` anti-infectives, `N` nervous system). Confirm values with a facets tool when unsure.
 
@@ -185,9 +185,9 @@ xlsx export is not implemented in this MCP (v1 returns JSON samples only).
 | `yaohai-search` | `dbname`, `query?`, `limit?`, `offset?` | Default limit 10, max 50; ≤ 1000 rows per query condition (offset+limit window cap) |
 | `yaohai-detail` | `dbname`, `id` | Skip DBs with `has_detail: false` |
 | `yaohai-facets` | `dbname?`, `query?`, `fields?` | Facets for 56 databases (44 `/in` + dedicated-route pages). Omit `fields` → discover; pass `fields` → fetch buckets. `sales_cn` / `sales_global` are hardcoded SPA lists. `china_new_drugs` / `generic_cn` are hidden. |
-| `yaohai-global-search` | `q?`, `query?`, `limit?`, `offset?` | `q` fills `query.term` |
+| `yaohai-global-search` | `q?`, `query?` | `q` fills `query.term`. Returns per-DB hit counts; no limit/export |
 
-When the target database is unclear, use `yaohai-catalog` (filter by `category` / `q`) to pick a `dbname`, then `yaohai-search`; or use `yaohai-global-search` for a cross-database panorama query.
+When the target database is unclear, use `yaohai-catalog` (filter by `category` / `q`) to pick a `dbname`, then `yaohai-search`; or use `yaohai-global-search` with a term to see which databases have hits, then query those DBs.
 
 > **Retrieval cap (anti-scraping, enforced client + server):** one distinct query
 > condition can return at most **1000 rows** (`offset + limit ≤ 1000`). A larger
@@ -326,8 +326,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"yaohai-cat
 echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"product-cn-search","arguments":{"query":{"drug_name":"阿司匹林"},"limit":3}}}' \
   | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea@latest
 
-# Global panorama search
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"yaohai-global-search","arguments":{"q":"阿司匹林","limit":3}}}' \
+# Cross-database hit counts (homepage /search)
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"yaohai-global-search","arguments":{"q":"达格列净"}}}' \
   | YAOHAI_MCP_TOKEN=ysk_your_token_here npx -y @kinginsun/mcp-drugsea@latest
 ```
 
@@ -350,7 +350,7 @@ After reloading MCP servers in the client, ask the agent:
 
 1. "List the drugsea tools" → should see 13 tools.
 2. "Search 阿司匹林 in product-cn" → should return rows with `total > 0`.
-3. "Global search: PD-1" → should return panorama results without error.
+3. "Global search: 达格列净" → should return per-database hit counts (`hits[]`), not molecule rows.
 
 ### Troubleshooting
 

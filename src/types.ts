@@ -58,10 +58,6 @@ export const YaohaiFacetsSchema = z.object({
 export const YaohaiGlobalSearchSchema = z.object({
   q: z.string().optional(),
   query: QueryObjectSchema.optional(),
-  search_mode: HoistedFlagSchema.optional(),
-  limit: z.coerce.number().int().optional(),
-  offset: z.coerce.number().int().optional(),
-  action: OutputActionSchema.optional(),
 });
 
 export const ProductViewTypeSchema = z.enum([

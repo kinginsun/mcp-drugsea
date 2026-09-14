@@ -16,6 +16,9 @@ import {
   mcpDbDetail,
   mcpDbOutput,
   mcpDbSearch,
+  mcpQuotaSnapshot,
+  attachQuotaFields,
+  countFacetHttpCalls,
   prefersMcpListApi,
   yaohaiPost,
 } from "./api.js";
@@ -237,28 +240,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "yaohai-global-search",
         description:
-          "Global drug panorama search (global_search). Use q or query.term / query.drug_name — item is not a key (it is rewritten to term). " +
-          "brand_name filters the trade-name column after the API fix; do not treat *_drug_num / *_ct_num as populated. " +
-          RETRIEVAL_CAP_HINT +
-          " " +
-          PRESENTATION_HINT +
-          " " +
-          OUTPUT_HINT,
+          "Cross-database hit counts for one search term (homepage /search). Only q or query.term. " +
+          "Returns how many matches that term has in each Yaohai database so you can pick which DB to query next " +
+          "(product-cn-search / reg-cn-search / yaohai-search). Not a molecule list; Excel export is not supported.",
         inputSchema: {
           type: "object",
           properties: {
             q: { type: "string", description: "Search term (maps to query.term)" },
-            query: QUERY_PROP,
-            limit: {
-              type: "number",
-              description: `Row cap (default ${YAOHAI_LIMIT_DEFAULT}, max ${YAOHAI_LIMIT_MAX})`,
-            },
-            offset: { type: "number", description: "Pagination offset (default 0); offset+limit is capped at 1000 rows per query condition" },
-            action: {
-              type: "string",
-              enum: ["output"],
-              description:
-                "Set to output to export the current query as Excel. Server returns an OSS download_url, not a binary file.",
+            query: {
+              type: "object",
+              additionalProperties: true,
+              description: "Only term is accepted (item / q / drug_name are rewritten to term).",
             },
           },
         },
@@ -549,34 +541,41 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           if (validated.dbname) {
             const entry = DBS_FACET_CATALOG[validated.dbname];
             if (!entry) {
-              return ok(facetDbUnknown(validated.dbname));
+              return okQuota(facetDbUnknown(validated.dbname), 0, validated.dbname);
             }
-            return ok({
-              dbname: validated.dbname,
-              title: entry.title,
-              category: entry.category,
-              facet_prefix: entry.prefix || null,
-              source: entry.source ?? "http",
-              facet_count: Object.keys(entry.fields).length,
-              facets: entry.fields,
-            });
+            return okQuota(
+              {
+                dbname: validated.dbname,
+                title: entry.title,
+                category: entry.category,
+                facet_prefix: entry.prefix || null,
+                source: entry.source ?? "http",
+                facet_count: Object.keys(entry.fields).length,
+                facets: entry.fields,
+              },
+              0,
+              validated.dbname
+            );
           }
-          return ok({
-            facet_capable_databases: DBS_FACET_DB_COUNT,
-            total_facet_fields: DBS_FACET_FIELD_COUNT,
-            note:
-              "Call yaohai-facets with a dbname to list its fields, or pass dbname + fields to fetch buckets. " +
-              "product_cn and reg_cn use product-cn-facets / reg-cn-facets instead. " +
-              "sales_cn / sales_global are hardcoded SPA lists (count is null).",
-            databases: DBS_FACET_DBS.map((db) => ({
-              dbname: db,
-              title: DBS_FACET_CATALOG[db].title,
-              category: DBS_FACET_CATALOG[db].category,
-              source: DBS_FACET_CATALOG[db].source ?? "http",
-              facet_count: Object.keys(DBS_FACET_CATALOG[db].fields).length,
-              fields: Object.keys(DBS_FACET_CATALOG[db].fields),
-            })),
-          });
+          return okQuota(
+            {
+              facet_capable_databases: DBS_FACET_DB_COUNT,
+              total_facet_fields: DBS_FACET_FIELD_COUNT,
+              note:
+                "Call yaohai-facets with a dbname to list its fields, or pass dbname + fields to fetch buckets. " +
+                "product_cn and reg_cn use product-cn-facets / reg-cn-facets instead. " +
+                "sales_cn / sales_global are hardcoded SPA lists (count is null).",
+              databases: DBS_FACET_DBS.map((db) => ({
+                dbname: db,
+                title: DBS_FACET_CATALOG[db].title,
+                category: DBS_FACET_CATALOG[db].category,
+                source: DBS_FACET_CATALOG[db].source ?? "http",
+                facet_count: Object.keys(DBS_FACET_CATALOG[db].fields).length,
+                fields: Object.keys(DBS_FACET_CATALOG[db].fields),
+              })),
+            },
+            0
+          );
         }
 
         // Fetch mode: both dbname and fields are required.
@@ -587,7 +586,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         const entry = DBS_FACET_CATALOG[validated.dbname];
         if (!entry) {
-          return ok(facetDbUnknown(validated.dbname));
+          return okQuota(facetDbUnknown(validated.dbname), 0, validated.dbname);
         }
 
         // Report unknown fields up front with the valid list, rather than letting
@@ -615,7 +614,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           fields: validated.fields,
           catalog: entry.fields,
         });
-        return ok(
+        return okQuota(
           attachSearchMeta(
             {
               dbname: validated.dbname,
@@ -623,53 +622,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               ...content,
             },
             sanitized
-          )
+          ),
+          countFacetHttpCalls(validated.fields, entry.fields),
+          validated.dbname
         );
       }
       case "yaohai-global-search": {
         const validated = YaohaiGlobalSearchSchema.parse(args ?? {});
-        const hoisted = hoistQueryFlags(asQuery(validated.query), validated);
+        const hoisted = asQuery(validated.query);
         if (validated.q && (hoisted.term === undefined || hoisted.term === "")) {
           hoisted.term = validated.q;
         }
         const sanitized = sanitizeQuery("global_search", hoisted);
-        if (validated.action === "output") {
-          const content = await mcpDbOutput({
-            dbname: "global_search",
-            query: sanitized.query,
-          });
-          return ok(attachSearchMeta(content, sanitized));
-        }
-        const window = enforceRetrievalWindow(
-          clampLimit(validated.limit, YAOHAI_LIMIT_DEFAULT, YAOHAI_LIMIT_MAX),
-          clampOffset(validated.offset)
-        );
         const content = await yaohaiPost("/g/mcp/yaohai/global-search", {
           query: sanitized.query,
-          limit: window.limit,
-          offset: window.offset,
         });
-        return ok(
-          attachSearchMeta(
-            content,
-            sanitized,
-            limitMeta(
-              validated.limit,
-              window.limit,
-              window.offset,
-              YAOHAI_LIMIT_DEFAULT,
-              YAOHAI_LIMIT_MAX
-            )
-          )
-        );
+        return ok(attachSearchMeta(content, sanitized));
       }
       case "product-cn-fields": {
         EmptyObjectSchema.parse(args ?? {});
-        return ok({
-          common_search: [...PRODUCT_CN_COMMON_FIELDS],
-          condition_search: PRODUCT_CN_FACET_FIELDS,
-          view_types: [...PRODUCT_CN_VIEW_TYPES],
-        });
+        return okQuota(
+          {
+            common_search: [...PRODUCT_CN_COMMON_FIELDS],
+            condition_search: PRODUCT_CN_FACET_FIELDS,
+            view_types: [...PRODUCT_CN_VIEW_TYPES],
+          },
+          0,
+          "product_cn"
+        );
       }
       case "product-cn-search": {
         const validated = ProductCnSearchSchema.parse(args ?? {});
@@ -729,7 +709,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           fields: validated.facets,
           catalog: PRODUCT_CN_FACET_FIELDS,
         });
-        return ok(attachSearchMeta(content, sanitized));
+        return okQuota(
+          attachSearchMeta(content, sanitized),
+          countFacetHttpCalls(validated.facets, PRODUCT_CN_FACET_FIELDS),
+          "product_cn"
+        );
       }
       case "product-cn-detail": {
         const validated = ProductCnDetailSchema.parse(args);
@@ -744,11 +728,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
       case "reg-cn-fields": {
         EmptyObjectSchema.parse(args ?? {});
-        return ok({
-          common_search: [...REG_CN_COMMON_FIELDS],
-          condition_search: REG_CN_FACET_FIELDS,
-          view_types: [...REG_CN_VIEW_TYPES],
-        });
+        return okQuota(
+          {
+            common_search: [...REG_CN_COMMON_FIELDS],
+            condition_search: REG_CN_FACET_FIELDS,
+            view_types: [...REG_CN_VIEW_TYPES],
+          },
+          0,
+          "reg_cn"
+        );
       }
       case "reg-cn-search": {
         const validated = RegCnSearchSchema.parse(args ?? {});
@@ -808,7 +796,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           fields: validated.facets,
           catalog: REG_CN_FACET_FIELDS,
         });
-        return ok(attachSearchMeta(content, sanitized));
+        return okQuota(
+          attachSearchMeta(content, sanitized),
+          countFacetHttpCalls(validated.facets, REG_CN_FACET_FIELDS),
+          "reg_cn"
+        );
       }
       case "reg-cn-detail": {
         const validated = RegCnDetailSchema.parse(args);
@@ -838,6 +830,16 @@ function ok(content: unknown) {
     content: [{ type: "text" as const, text: JSON.stringify(content) }],
     isError: false,
   };
+}
+
+async function okQuota(content: unknown, cost: number, dbname?: string) {
+  let snapshot: Record<string, unknown> = {};
+  try {
+    snapshot = await mcpQuotaSnapshot(dbname);
+  } catch {
+    snapshot = {};
+  }
+  return ok(attachQuotaFields(content, cost, snapshot));
 }
 
 /**

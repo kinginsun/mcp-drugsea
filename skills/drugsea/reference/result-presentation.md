@@ -16,7 +16,7 @@ Read `total` first, then decide the shape of your answer:
 | **> 100** | **Do not page through it.** Summarize with counts and a breakdown, show 5–10 examples, and state the full `total` explicitly. Offer to narrow. |
 
 The hard reason for the last row: `limit` caps at 100 (`product-cn-*`, `reg-cn-*`) or 50
-(`yaohai-search`, `yaohai-global-search`). A `total` of 243,104 can never be enumerated.
+(`yaohai-search`). A `total` of 243,104 can never be enumerated.
 Paging is for reading the *first few pages* of a manageable result set, not for exhausting
 a large one.
 
@@ -271,8 +271,8 @@ Users otherwise assume the counts are comparable.
   国家基药，未进国家集采。
 - **CDE 申报**（`reg_cn`，search_mode=1，默认排除备案）：**100** 条受理号 —
   已完结、已上市、在研、终止各状态并存。
-- **全球品种**（`global_search`）：命中 2 个品种条目（奥美替尼 / 奥希替尼），
-  但该库的 `*_drug_num` 计数为 0，说明全景库的上市计数未回填 — 上市数据以上面两个库为准。
+- **全库定位**（`global_search` / `yaohai-global-search`）：各库命中条数，用来选库；
+  不是品种行。上市/申报数字以上面两个库为准。
 
 两个中国库的 `search_mode` 默认值不同（product_cn=3，reg_cn=1），以上均已显式设为 1
 以便对齐口径。
@@ -296,7 +296,7 @@ Users otherwise assume the counts are comparable.
 - **Don't present a sample as if it were the full set.** State `total` and how many you
   are showing.
 - **Don't invent a frontend URL.** Only include `detail_url` when it is a working API URL
-  (`yaohai-search` / `yaohai-global-search`). For `product_cn` / `reg_cn` it is
+  (`yaohai-search`). For `product_cn` / `reg_cn` it is
   `https://db.drugsea.cn/api/disabled` — omit it and offer a detail drill-down instead.
 - **Don't mix `total` from different `search_mode` values** without saying so.
 - **Don't report a facet count as a precise figure.** Confirm with a filtered search.

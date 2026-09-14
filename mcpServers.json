@@ -26,7 +26,7 @@
             "description": "Facet distributions (条件筛选) for dbs databases; omit fields to list them"
           },
           "yaohai-global-search": {
-            "description": "Global drug panorama search"
+            "description": "Cross-database hit counts for one term"
           },
           "product-cn-fields": {
             "description": "List product_cn search/filter fields"

@@ -391,7 +391,7 @@ pickers are still not fetchable. `product_cn` / `reg_cn` keep dedicated tools.
 | `sales_cn` | `years`, `quarter`, `drug_type`, `administration_route`, `ATC_code`, `city` | ✓ static SPA list (`count` null) |
 | `sales_global` | `years`, `source` | ✓ static SPA list (`count` null) |
 | `drugreg_cn` | 16 terms `is_condition` fields | ✓ `GET /drugreg_cn/aggs/filter/{field}` |
-| `global_search` | `dbname` | not in catalog (parent-supplied list) |
+| `global_search` | — | not a facet DB (hit-count index only) |
 | `medical_device_beian` / `_jinkou_beian` | `filing_date` | date picker only — not in catalog |
 
 ## Limits and offsets
@@ -401,7 +401,7 @@ pickers are still not fetchable. `product_cn` / `reg_cn` keep dedicated tools.
 | `product-cn-search` | 20 | 100 | clamped, not errored |
 | `reg-cn-search` | 20 | 100 | clamped, not errored |
 | `yaohai-search` | 10 | 50 | clamped, not errored |
-| `yaohai-global-search` | 10 | 50 | clamped, not errored |
+| `yaohai-global-search` | — | n/a | hit counts only; no paging |
 
 `offset` is clamped to `>= 0` and truncated to an integer. Passing `limit: 5000` silently
 becomes the max — it does not fail. Responses echo `limit_requested` / `limit` /
@@ -456,7 +456,9 @@ valid date. A well-formed bare value never errors. So:
 > nothing matches. Silent full-DB return = the field *key* is unknown.
 
 MySQL-engine databases include `yzpj_products`,
-`sales_cn`, `sales_global`, `global_search`. (`generic_cn` / `china_new_drugs` are hidden from MCP.)
+`sales_cn`, `sales_global`. (`generic_cn` / `china_new_drugs` are hidden from MCP.)
+`global_search` is **not** MySQL: it is the homepage `/search` ES aggregation
+(`GET /yaohai/es/mdb/index/search/v1?term=`).
 
 ### 3. Aggregation engine (`route_type: aggs`)
 
@@ -512,7 +514,8 @@ Item shape differs by tool:
 | Tool | Item shape |
 |---|---|
 | `product-cn-search`, `reg-cn-search` | **flat**: `items[0].drug_name` |
-| `yaohai-search`, `yaohai-global-search` | **nested**: `items[0].fields.drug_name`, with `items[0].detail_url` as a sibling |
+| `yaohai-search` | **nested**: `items[0].fields.drug_name`, with `items[0].detail_url` as a sibling |
+| `yaohai-global-search` | **not rows**: `hits[]` with `title` / `count` / `frontend_url` |
 
 Use `field_labels` to label output columns rather than guessing translations.
 
@@ -520,7 +523,8 @@ Use `field_labels` to label output columns rather than guessing translations.
 
 | Tool | `detail_url` |
 |---|---|
-| `yaohai-search`, `yaohai-global-search` | working API URL |
+| `yaohai-search` | working API URL |
+| `yaohai-global-search` | `hits[].frontend_url` (SPA page), not a record detail |
 | `product-cn-search`, `reg-cn-search` | rebuilt when possible; ignore any URL containing `/api/disabled` |
 
 For `product_cn` / `reg_cn`, drill down with `product-cn-detail` / `reg-cn-detail`.

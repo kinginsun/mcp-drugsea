@@ -41,7 +41,7 @@ If you are unsure which database to use, call `yaohai-catalog` (optionally with
 | MCP tool | Use for | Key args |
 |---|---|---|
 | `yaohai-catalog` | Discover a `dbname`; confirm category / keywords | `category?`, `q?` |
-| `yaohai-global-search` | Cross-database drug panorama (`global_search`) | `q`, `query?`, `limit` (≤50), `action=output` |
+| `yaohai-global-search` | Cross-database hit counts (`global_search` / homepage `/search`) | `q` or `query.term` only; no Excel |
 | `product-cn-search` | **Marketed** China drugs (批准文号 / 国药准字) | `query`, `limit` (≤100), `offset`, `view_type?`, `action=output` |
 | `product-cn-fields` | Field keys for `product_cn` | — |
 | `product-cn-facets` | Facet distributions for `product_cn` | `query?`, **`facets` (required)** |
@@ -149,7 +149,7 @@ This is the single most common routing mistake.
 |---|---|---|
 | 已上市, 批准文号, 国药准字, 上市药品, 医保, 集采, 一致性评价 | `product_cn` | `product-cn-search` |
 | 在研, 受理号, 申报, 审评, CDE, IND, NDA 进度, 尚未上市 | `reg_cn` | `reg-cn-search` |
-| Ambiguous, or "this molecule overall" | `global_search` | `yaohai-global-search` |
+| Ambiguous, or "which databases mention this name?" | `global_search` | `yaohai-global-search` |
 
 A drug can appear in both: `product_cn` holds approved marketing authorizations,
 `reg_cn` holds every CDE submission (including ones that later became approved).
@@ -159,7 +159,7 @@ For "what's the competitive landscape of X", query **both** and say which came f
 
 | If the question is about… | dbname | Reference file |
 |---|---|---|
-| A molecule across all markets / no clear target | `global_search` | [db-core.md](reference/db-core.md) |
+| Which DBs have hits for this name (then drill in) | `global_search` | [db-core.md](reference/db-core.md) |
 | China marketed drugs | `product_cn` | [db-core.md](reference/db-core.md) |
 | China CDE registration / review | `reg_cn` | [db-core.md](reference/db-core.md) |
 | China clinical trials (CTR) | `ct_cn` | [db-core.md](reference/db-core.md) |
@@ -234,7 +234,7 @@ Before calling a search tool, do this normalization yourself:
 1. **Pick the language the database expects.** Chinese databases (`product_cn`,
    `reg_cn`, `yibao`, `jiyao`, `jicai`, `zhaobiao`) match best on Chinese names. International
    databases (`product_us`, `fda_ndc`, `dpd`, `uk_emc`) match best on English INNs.
-   `global_search` accepts either and maps synonyms internally.
+   `yaohai-global-search` takes one `term` (Chinese or English) and returns per-DB hit counts.
 2. **Strip noise.** Remove dose forms, strengths and pack info from the keyword
    unless you deliberately search `specification` / `std_dosage_form`.
    `阿托伐他汀钙片 20mg` → `item: 阿托伐他汀` + `std_dosage_form: 片剂`.
@@ -270,7 +270,8 @@ behaviour for malformed ranges — are in [query-syntax.md](reference/query-synt
 | Tool | Default `limit` | Max `limit` |
 |---|---|---|
 | `product-cn-search`, `reg-cn-search` | 20 | 100 |
-| `yaohai-search`, `yaohai-global-search` | 10 | 50 |
+| `yaohai-search` | 10 | 50 |
+| `yaohai-global-search` | — | n/a (hit counts, not a row page) |
 
 Use `offset` to page. The total match count comes back as `total` (the raw API
 field is `tnum`). Never request more than you will actually show.
@@ -285,6 +286,7 @@ re-query; each new condition gets its own window.
 again, generates xlsx through the list API (`action=output`), uploads it to OSS, and
 returns `download_url` (plus `oss_url`). It never streams a binary file. If
 `total ≥ 1000`, narrow the query instead of exporting. Give the user the OSS link.
+`yaohai-global-search` does **not** support Excel.
 
 ## Standard workflow
 
@@ -317,9 +319,8 @@ returns `download_url` (plus `oss_url`). It never streams a binary file. If
   "when was X first approved" use `first_approve_date`.
 - **`ATC_code` facets return only the first-level letter** (e.g. `C`), not full codes
   like `C10AA05`. Use [atc-therapeutic-classes.md](reference/atc-therapeutic-classes.md).
-- **`global_search` SPA 条件筛选 is `dbname` (数据来源)** — a list supplied by the
-  parent page, not a live agg. `yaohai-facets` does not wrap this route. Use
-  `yaohai-global-search` for discovery, then re-query the specific database.
+- **`global_search` is homepage `/search` hit counts**, not 全球药品. Only `term`.
+  No facets, no detail, no Excel. After it, query the DBs with the largest `count`.
 - **`product-cn-facets` / `reg-cn-facets` responses always report `filter_type: "multiple"`**
   even for their date and range fields, and date facet values come back as epoch
   milliseconds. There is no `type` key in the payload — `filter_type` is the only one.
@@ -340,11 +341,11 @@ returns `download_url` (plus `oss_url`). It never streams a binary file. If
   read `total` to *confirm* a class filter worked.
 - **`drugsales` requires VIP (`groupid=205`)** and is slow without filters — always
   pass `year` and a drug/company key.
-- **14 databases have `has_detail: false`** — a detail call will fail or return nothing.
+- **15 databases have `has_detail: false`** — a detail call will fail or return nothing.
   Use the list fields instead. They are: `nmpa_tcm_protection`, `nmpa_buchongbeian`,
   `japan_dmf`, `product_jp`, `isaf_drugs`, `isaf_tcm`, `fda_dmf`, `cmchk_pcm`,
   `drugsales`, `sales_cn`, `sales_global`, `yzpj_products`,
-  `herb_formulas`, `herbs`.
+  `herb_formulas`, `herbs`, `global_search`.
 - **`yaohai-search` with `dbname=product_cn` or `dbname=reg_cn` is a mistake** when the
   dedicated tools apply — they add view types, facets and field discovery.
 - **Unknown field keys: fixed on MCP.** Aliases are rewritten (`query_aliases`), leftover
@@ -387,7 +388,8 @@ returns `download_url` (plus `oss_url`). It never streams a binary file. If
   `is_passed_yizhi=1 OR is_orange_book=1`. It does not exist as a stored field.
 - **`detail_url` containing `/api/disabled` is not usable** — ignore it and call the
   detail tool with the item's `id` (encrypted preferred; 批准文号 / 受理号 as fallback).
-  `yaohai-search` and `yaohai-global-search` return working `detail_url` values.
+  `yaohai-search` returns working `detail_url` values. `yaohai-global-search` returns
+  `hits[].frontend_url` (SPA pages), not record details.
 - **Attachments (附件) in `yaohai-detail`** — the `attachments` field is a
   semicolon-separated string. Each attachment has these segments (in order):
   `file_hash; file_id; filename; original_source_url; file_extension; dp2_attachments_path`.
@@ -401,9 +403,10 @@ returns `download_url` (plus `oss_url`). It never streams a binary file. If
 - **`ATC_code` in returned rows is a Chinese class name** (e.g. `心血管系统`), but the
   **filter value is a single letter** (e.g. `C`). Do not copy row values into filters.
 - **Result item shape differs between tools.** `product-cn-search` and `reg-cn-search`
-  return each row **flattened** (`items[0].drug_name`). `yaohai-search` and
-  `yaohai-global-search` return each row **nested** (`items[0].fields.drug_name`, with
-  `items[0].detail_url` as a sibling). Check the shape before you read fields.
+  return each row **flattened** (`items[0].drug_name`). `yaohai-search` returns each row
+  **nested** (`items[0].fields.drug_name`, with `items[0].detail_url` as a sibling).
+  `yaohai-global-search` is **not** a row list: read `hits[]` (`title`, `count`,
+  `frontend_url`). Check the shape before you read fields.
 - **Every response includes `field_labels`** — a key → Chinese label map for the
   columns it returned. Use it to label your output instead of guessing.
 

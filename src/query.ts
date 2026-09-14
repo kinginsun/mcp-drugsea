@@ -38,7 +38,7 @@ export const QUERY_ALIASES: Record<string, Record<string, string>> = {
   ct_cn: { sponsor: "study_sponsor" },
   ct_global: { sponsor: "study_sponsor", intervention: "interventions" },
   product_eu: { substance: "active_substance", company: "manufacture" },
-  global_search: { item: "term" },
+  global_search: { item: "term", q: "term", drug_name: "term", keyword: "term" },
   zhaobiao: { company: "manufacture" },
   shuomingshu: { company: "manufacture" },
   cn_company: { company: "manufacture", enterprise: "manufacture" },
@@ -106,18 +106,7 @@ const KNOWN_FILTERS: Record<string, readonly string[]> = {
     "therapeutic_area",
     "tags",
   ],
-  global_search: [
-    "term",
-    "drug_name",
-    "target",
-    "brand_name",
-    "indication",
-    "brief_introduction",
-    "drug_type",
-    "rd_status",
-    "year",
-    "ATC_code",
-  ],
+  global_search: ["term"],
   zhaobiao: [
     "item",
     "category",
@@ -268,7 +257,7 @@ export function sanitizeQuery(dbname: string, query: QueryObject): SanitizedQuer
   }
   if (dbname === "global_search") {
     warnings.push(
-      "china_drug_num / usa_drug_num / *_ct_num on global_search rows are often 0 (ETL not backfilled) — do not cite them."
+      "global_search returns per-database hit counts for this term, not molecule rows. Next call the dedicated search tool for the highest-count DB."
     );
   }
 

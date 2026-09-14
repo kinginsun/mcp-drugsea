@@ -59,7 +59,7 @@ tools:
       # registry comparison is meaningless here. Silence it for dev runs.
       YAOHAI_MCP_UPDATE_CHECK: "0"
     timeout: 60000
-    description: "Global drug panorama search"
+    description: "Cross-database hit counts for one term (homepage /search)"
   product-cn-fields:
     type: stdio
     command: ["node", "dist/index.js"]

@@ -306,11 +306,41 @@ function parseApiJson(status: number, text: string): ApiResult {
   };
 }
 
+export const QUOTA_KEYS = [
+  "quota_cost",
+  "quota_remain",
+  "quota_remain_route",
+] as const;
+
+/** First defined value wins. Envelope-level quota is merged when content omits it. */
+export function pickQuotaFields(...sources: unknown[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const src of sources) {
+    if (!src || typeof src !== "object" || Array.isArray(src)) continue;
+    const rec = src as Record<string, unknown>;
+    for (const k of QUOTA_KEYS) {
+      if (out[k] === undefined && rec[k] !== undefined) {
+        out[k] = rec[k];
+      }
+    }
+  }
+  return out;
+}
+
+function mergeQuota(content: unknown, raw?: Record<string, unknown>): unknown {
+  const quota = pickQuotaFields(content, raw);
+  if (Object.keys(quota).length === 0) return content;
+  if (content && typeof content === "object" && !Array.isArray(content)) {
+    return { ...(content as Record<string, unknown>), ...quota };
+  }
+  return content;
+}
+
 function unwrap(result: ApiResult): unknown {
   if (!result.ok) {
     throw new ApiError(result.error, result.status, result.raw);
   }
-  return result.content;
+  return mergeQuota(result.content, result.raw);
 }
 
 export async function yaohaiPost(
@@ -329,6 +359,50 @@ export async function yaohaiPost(
     payload
   );
   return unwrap(parseApiJson(status, text));
+}
+
+export function attachQuotaFields(
+  content: unknown,
+  cost: number,
+  snapshot?: unknown
+): unknown {
+  if (!content || typeof content !== "object" || Array.isArray(content)) {
+    return content;
+  }
+  return {
+    ...(content as Record<string, unknown>),
+    ...pickQuotaFields(snapshot),
+    quota_cost: cost,
+  };
+}
+
+export async function mcpQuotaSnapshot(
+  dbname?: string
+): Promise<Record<string, unknown>> {
+  const body: Record<string, unknown> = {};
+  if (dbname) {
+    body.dbname = dbname;
+  }
+  const content = (await yaohaiPost("/g/mcp/yaohai/quota", body)) as Record<
+    string,
+    unknown
+  >;
+  return pickQuotaFields(content);
+}
+
+export function countFacetHttpCalls(
+  fields: string[],
+  catalog: Record<string, FacetField>
+): number {
+  let n = 0;
+  for (const field of fields) {
+    const meta = catalog[field];
+    if (Array.isArray(meta?.static_values) && meta.static_values.length > 0) {
+      continue;
+    }
+    n += 1;
+  }
+  return n;
 }
 
 export async function yaohaiGet(
@@ -404,6 +478,7 @@ export async function mcpDbSearch(opts: {
     query_applied: opts.query,
     field_labels: content.field_labels,
     via: "mcp",
+    ...pickQuotaFields(content),
   };
 }
 

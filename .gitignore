@@ -42,5 +42,8 @@ yarn-error.log*
 # Generated due-diligence reports (local only)
 reports/
 
+# Local MCP/Yaohai spreadsheet dumps (not part of the package)
+exports/
+
 # Local symlink to DrugSea frontend/backend source (absolute path, machine-specific)
 /drugsea_frontend_and_backend

@@ -169,7 +169,7 @@ async function main() {
       query: { item: "阿司匹林" },
       fields: ["drug_type", "province"],
     }],
-    ["yaohai-global-search", { q: "PD-1", limit: 3 }],
+    ["yaohai-global-search", { q: "达格列净" }],
     ["product-cn-fields", {}],
     ["product-cn-search", { query: { drug_name: "阿司匹林" }, limit: 3 }],
     ["product-cn-facets", {

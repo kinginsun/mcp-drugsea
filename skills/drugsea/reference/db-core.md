@@ -384,87 +384,53 @@ The other 1 is **filter-only** — valid in a `query`, but not in the facet cata
 
 ## `global_search` — 全局搜索
 
-**Category** 综合 · **Route type** `custom` · **Frontend** `/search` · **API path** `/global_drugs/list` · **Detail** yes
+**Category** 综合 · **Route type** `custom` · **Frontend** `/search` · **API path** `/yaohai/es/mdb/index/search/v1` · **Detail** no
 
-*Catalog keywords:* 全球, 综合, 药物全景
+*Catalog keywords:* 全局, 全库, 跨库, 快速定位
 
 | MCP tool | |
 |---|---|
 | Search | `yaohai-global-search` |
-| Field keys | — |
-| Facets | SPA 条件筛选 (`dbname`) |
-| Detail | `yaohai-detail` |
+| Field keys | `term` only |
+| Facets | none |
+| Detail | none — not a record list |
 
-> **`term` is the keyword key.** The backend maps `term` → `drug_name` internally (`make_global_drugs_search_sql`). MCP aliases `item` → `term`. Prefer `term` / `drug_name`.
+> Homepage `/search`. **One argument: `term`.** Returns how many times that term hits **each database**, so you can decide which library to query next. It is **not** a molecule / product row list. Excel export is not supported.
 
-**`brand_name` filters the trade-name column** (fixed). Use `indication` for 适应症. `*_drug_num` / `*_ct_num` columns are often 0 / unreliable until ETL backfill — do not treat them as market counts.
+`/global_drugs/list` is a separate WIP 全球药品 SQL API and is **not** this tool.
 
-Rows are **molecules**, not products. `detail_url` is a working API URL on this database.
+MCP aliases `item` / `q` / `drug_name` / `keyword` → `term`. Unknown keys error.
 
-### Query keys (from `make_global_drugs_search_sql`, verified live)
+### Query keys
 
 | Key | Verified | Behaviour |
 |---|---|---|
-| `term` | ✓ | 主搜索词 — internally mapped to `drug_name`; LIKE over drug_name / drug_name_en / brand_name |
-| `drug_name` | ✓ | 药品名称 — same LIKE behaviour as `term` |
-| `exact` | ✓ | `1` = whole-value equality on `drug_name` only (verified: 奥希替尼+exact=1 → 1 row) |
-| `target` | ✓ | 靶点 — LIKE |
-| `brand_name` | ✓ | 商品名 — LIKE on the `brand_name` column |
-| `indication` | ✓ | 适应症 — LIKE |
-| `brief_introduction` | | 品种简介 — LIKE |
-| `drug_type` | | 药品类型 — exact `=` or `string[]` (e.g. 化学药品 / 中药 / 生物制品) |
-| `rd_status` | | 研发状态 — exact `=` or `string[]` |
-| `year` | | 年份 — exact `=` or `string[]` |
-| `ATC_code` | | ATC — `whereIn`; pass a `string[]` of letters |
+| `term` | ✓ | 搜索词 — the only accepted filter |
 
-MCP aliases `item` → `term`. Unknown keys error (or appear in `query_ignored`) instead of returning all 28,282 molecules.
+### Response shape
 
-### Facet / filter fields
-
-SPA「条件筛选」from `globalSearch/components/ConditionSearchPanel.js` is **`dbname` (数据来源)** — a list passed in by the parent, `autoRequestData: false`. `yaohai-facets` does not wrap this route. `drug_type` / `rd_status` / `year` / `ATC_code` are SQL query keys (table above), not rendered condition panels. Drill into a specific market DB for a real 条件筛选 breakdown.
+`total` is the sum of per-database hit counts. `hits[]` is a flat list of `{ category, category_title, source, title, count, frontend_url }`, sorted by `count` descending. `categories` keeps the original grouping (上市情报 / 注册情报 / …). After this call, use `product-cn-search` / `reg-cn-search` / `yaohai-search` on the highest-count DBs.
 
 ### Examples
 
-**Find a molecule across all markets — 2 rows, both the same ingredient**
+**Which databases mention 达格列净?**
 
 ```jsonc
-{"query": {"term": "osimertinib"}, "limit": 10}
+{"q": "达格列净"}
 ```
 
-**Exact name match only — 1 row**
+or
 
 ```jsonc
-{"query": {"drug_name": "奥希替尼", "exact": 1}, "limit": 10}
+{"query": {"term": "达格列净"}}
 ```
 
-**Find drugs by target**
+Then, if `hits` shows 国内上市药品 with the largest `count`, call `product-cn-search`. Do **not** treat this payload as a variety list.
+
+**`item` is aliased to `term`**
 
 ```jsonc
-{"query": {"target": "EGFR"}, "limit": 20}
-```
-
-**Chemical drugs matching a name fragment**
-
-```jsonc
-{"query": {"term": "替尼", "drug_type": "化学药品"}, "limit": 20}
-```
-
-**Drugs by indication — use `indication`, not `brand_name`**
-
-```jsonc
-{"query": {"indication": "非小细胞肺癌"}, "limit": 20}
-```
-
-**Trade name**
-
-```jsonc
-{"query": {"brand_name": "立普妥"}, "limit": 10}
-```
-
-**`item` is aliased to `term` on MCP** (prefer `term`)
-
-```jsonc
-{"query": {"item": "osimertinib"}, "limit": 10}
+{"query": {"item": "达格列净"}}
 ```
 
 ---

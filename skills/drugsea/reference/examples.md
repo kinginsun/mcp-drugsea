@@ -125,16 +125,15 @@ A drug appearing in both is normal: `product_cn` holds marketing authorizations,
 holds every submission including ones that later became approvals. `related_slhs` on a
 `product_cn` row links back to its CDE submissions.
 
-For a cross-market picture first:
+To see which databases mention a name first:
 
 ```jsonc
 // yaohai-global-search
-{"query": {"term": "osimertinib"}, "limit": 10}
+{"q": "osimertinib"}
 ```
 
-→ 2 molecule entries (奥美替尼 / 奥希替尼). Their `china_drug_num` / `usa_drug_num` were
-both 0, so the panorama's counts are not populated — use them for discovery only, then
-re-query the specific databases for real numbers.
+→ per-database hit counts (`hits[]`). Then query the DBs with the largest `count`
+(`product-cn-search` / `reg-cn-search` / `yaohai-search`). This is not a molecule list.
 
 ---
 
@@ -471,7 +470,7 @@ are *not* in this tool's catalog: they return `supported: false` with a hint poi
 | Habit | Why |
 |---|---|
 | Ingredient vs product name — pick deliberately | Mode 2 needs the full product name; modes 1/3 take the ingredient. |
-| Chinese for CN databases, English for `product_eu` / `ct_global` / `global_search.term` | Those stores hold English values; Chinese returns 0. |
+| Chinese for CN databases, English for `product_eu` / `ct_global`; `global_search.term` accepts either | International stores hold English values; Chinese returns 0. `global_search` is a hit-count index. |
 | Brand name → `item`, or `search_mode=1` | Brands live in `related_drug_names`, which mode 1 targets. |
 | Disease area → ATC letter, not a keyword | Keyword-searching "抗肿瘤" misses most oncology drugs. |
 | "First approved" → `first_approve_date` | `approve_date` is the latest re-registration. |
