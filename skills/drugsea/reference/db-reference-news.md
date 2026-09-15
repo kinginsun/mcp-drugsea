@@ -83,7 +83,7 @@ attachments on `yaohai-detail`. When `dp2_attachments_path` is present, prefer
 ### Facet / filter fields
 
 `yaohai-facets` can aggregate the **2 `terms` fields** marked ✓ below.
-Every field here is facetable. Note that `yaohai-facets` **throws** on an unknown field name (unlike search, which silently drops it and returns everything), so a typo surfaces immediately rather than as a plausible-looking full result set.
+`publish_date` is **filter-only** — valid in a `query` as `"YYYY-MM-DD to YYYY-MM-DD"`, but passing it in `fields` throws `Unknown facet field(s)`.
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
@@ -108,7 +108,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 | Facets | `yaohai-facets` (3 fields) |
 | Detail | `yaohai-detail` |
 
-> Regulations/policy documents. Free text. The date filter is **not** facetable and **not accepted by MCP search** (same `publish_date` rejection as `zb_news`). Use `source` (法规来源), `main_category` (一级分类) or `category` (公告栏目) to break results down.
+> Regulations/policy documents. Free text. **`publish_date` 已支持 `"YYYY-MM-DD to YYYY-MM-DD"`**（不是 facet）。Live: 空查询 92,812；`2026-09-01 to 2026-09-15` → 68. Use `source` (法规来源), `main_category` (一级分类) or `category` (公告栏目) to break results down.
 
 ### Search fields
 
@@ -123,7 +123,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 ### Facet / filter fields
 
 `yaohai-facets` can aggregate the **3 `terms` fields** marked ✓ below.
-`publish_date` is a SPA date picker only — it is **not** a valid MCP `query` key (sending it errors) and it is not facetable.
+`publish_date` is **filter-only** — valid in a `query` as `"YYYY-MM-DD to YYYY-MM-DD"`, but passing it in `fields` throws `Unknown facet field(s)`.
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
@@ -132,7 +132,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 | `source` | | ✓ | 法规来源 | multiple — exact string or `string[]`, copy the facet value verbatim |
 | `main_category` | | ✓ | 一级分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
 | `category` | | ✓ | 公告栏目 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `publish_date` | | — SPA picker only | 发布日期 | **not accepted by MCP search** — sending it errors. Use default date-desc order or `item`, then read the row field |
+| `publish_date` | ✓ | — filter only | 发布日期 | 已支持 `"YYYY-MM-DD to YYYY-MM-DD"`；a bare `"YYYY-MM-DD"` means that exact day |
 
 ---
 
