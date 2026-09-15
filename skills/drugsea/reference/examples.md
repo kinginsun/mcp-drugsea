@@ -1,6 +1,6 @@
 # End-to-end examples
 
-Fifteen realistic questions, each traced from the user's words to exact tool calls. All
+Seventeen realistic questions, each traced from the user's words to exact tool calls. All
 counts were verified live against `db3.drugsea.cn` on 2026-09-05 and will drift as the
 data updates — treat them as shape checks, not facts to quote.
 
@@ -408,6 +408,8 @@ Instead:
    ```
 2. Present the breakdown + 5–10 sample rows + the exact `total`.
 3. Offer to narrow: by ingredient, by dosage form, by company, by year.
+4. Do **not** call `action=output` while `total ≥ 1000`. Excel only works for 1–999
+   rows; narrow first, then export.
 
 If a facet comes back `"success": false` with
 `您今日已达当前页面最大访问量，请升级或明日再来`, the daily facet quota is exhausted. Fall
@@ -464,6 +466,29 @@ lists `query_ignored`) instead of returning the whole database. `product_cn` / `
 are *not* in this tool's catalog: they return `supported: false` with a hint pointing at
 `product-cn-facets` / `reg-cn-facets`.
 
+---
+
+## 17. "把筛选结果导出成 Excel"
+
+**Routing.** Same as the search you already ran. Export is not a separate tool — it is
+`action: "output"` on `product-cn-search` / `reg-cn-search` / `yaohai-search`.
+
+**Sequence.** Search first. Read `total`. Only then export:
+
+```jsonc
+// 1) product-cn-search — confirm the window
+{"query": {"item": "阿托伐他汀", "std_dosage_form": "片剂"}, "limit": 20}
+
+// 2) same query, action=output — only if total is 1–999
+{"query": {"item": "阿托伐他汀", "std_dosage_form": "片剂"}, "action": "output"}
+```
+
+→ Response is JSON with `download_url` (and `oss_url`), `filename`, `total`, `via: "mcp_oss"`.
+Give the user the OSS link. Never expect a binary xlsx in the MCP payload.
+
+If `total` is 0 or ≥ 1000, skip step 2 and narrow. `yaohai-global-search` cannot export.
+
+---
 
 ## Keyword-preparation habits these examples share
 

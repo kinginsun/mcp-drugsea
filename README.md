@@ -171,7 +171,7 @@ Therapeutic-class queries (抗癌, 心血管, …): prefer ConditionSearch `ATC_
 
 If `total > 20`, summarize in chat (about 5–10 sample rows) instead of pasting the full table.
 
-xlsx export is not implemented in this MCP (v1 returns JSON samples only).
+**Excel export (`action=output`):** `product-cn-search`, `reg-cn-search`, and `yaohai-search` can export the current query as `.xlsx`. Search first and read `total`. If `total` is 1–999, call the same tool again with `action: "output"`. The server counts again, generates xlsx via the list API, uploads it to OSS, and returns `download_url` (plus `oss_url`) — never a binary file. If `total` is 0 or `≥ 1000`, narrow the query instead of exporting. Give the user the OSS link. `yaohai-global-search` does not support Excel.
 
 `product-cn-*` and `reg-cn-*` list/facet/detail calls use the same routes as the website where applicable. Some deployments IP-allowlist direct GET paths. The `yaohai-*` tools use `POST /g/mcp/yaohai/*` with Bearer token auth.
 
@@ -182,7 +182,7 @@ xlsx export is not implemented in this MCP (v1 returns JSON samples only).
 | Tool | Parameters | Notes |
 |------|------------|--------|
 | `yaohai-catalog` | `category?`, `q?` | List databases |
-| `yaohai-search` | `dbname`, `query?`, `limit?`, `offset?` | Default limit 10, max 50; ≤ 1000 rows per query condition (offset+limit window cap) |
+| `yaohai-search` | `dbname`, `query?`, `limit?`, `offset?`, `action?` | Default limit 10, max 50; ≤ 1000 rows per query condition (offset+limit window cap). `action=output` exports xlsx to OSS and returns `download_url` |
 | `yaohai-detail` | `dbname`, `id` | Skip DBs with `has_detail: false` |
 | `yaohai-facets` | `dbname?`, `query?`, `fields?` | Facets for 56 databases (44 `/in` + dedicated-route pages). Omit `fields` → discover; pass `fields` → fetch buckets. `sales_cn` / `sales_global` are hardcoded SPA lists. `china_new_drugs` / `generic_cn` are hidden. |
 | `yaohai-global-search` | `q?`, `query?` | `q` fills `query.term`. Returns per-DB hit counts; no limit/export |
@@ -194,6 +194,7 @@ When the target database is unclear, use `yaohai-catalog` (filter by `category` 
 > `offset` is rejected; `limit` is auto-shrunk near the edge of the window. To
 > reach deeper slices, narrow the filters (date / province / ATC / enterprise)
 > and query again — each *new* condition gets its own 1000-row window.
+> Excel export (`action=output`) uses the same ceiling: `total` must be 1–999.
 
 `yaohai-facets` mirrors the ConditionSearch facet filters of the website (医保 `yibao`, 招标 `zhaobiao`, 临床 `ct_cn`, 美国上市 `product_us`, …). Two modes:
 
@@ -207,7 +208,7 @@ For the two dedicated ES routes use `product-cn-facets` / `reg-cn-facets` instea
 | Tool | Parameters | Notes |
 |------|------------|--------|
 | `product-cn-fields` | _(none)_ | Local field catalog |
-| `product-cn-search` | `query?`, `limit?`, `offset?`, `view_type?` | Default `search_mode=3`; limit default 20, max 100 |
+| `product-cn-search` | `query?`, `limit?`, `offset?`, `view_type?`, `action?` | Default `search_mode=3`; limit default 20, max 100. `action=output` → OSS xlsx link |
 | `product-cn-facets` | `query?`, `facets` (required) | Do not request all 22 dimensions. Recommended: `ATC_code`, `drug_type`, `national_yibao`, `std_dosage_form`, `source` |
 | `product-cn-detail` | `id` | Encrypted id from search rows |
 
@@ -220,7 +221,7 @@ For the two dedicated ES routes use `product-cn-facets` / `reg-cn-facets` instea
 | Tool | Parameters | Notes |
 |------|------------|--------|
 | `reg-cn-fields` | _(none)_ | Local field catalog |
-| `reg-cn-search` | `query?`, `limit?`, `offset?`, `view_type?` | Default `rows_excluded=1`, `search_mode=1`; limit default 20, max 100 |
+| `reg-cn-search` | `query?`, `limit?`, `offset?`, `view_type?`, `action?` | Default `rows_excluded=1`, `search_mode=1`; limit default 20, max 100. `action=output` → OSS xlsx link |
 | `reg-cn-facets` | `query?`, `facets` (required) | Recommended: `ATC_code`, `rd_status`, `drug_type`, `transact_status`, `register_type` |
 | `reg-cn-detail` | `id` | Encrypted id from search rows |
 

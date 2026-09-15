@@ -12,13 +12,22 @@ Read `total` first, then decide the shape of your answer:
 | **0** | Say so plainly, then diagnose — wrong key, wrong value, wrong database, or a date/filter that is too narrow. Offer the most likely fix. Do not silently widen the query. |
 | **1–5** | Show every row. A compact table of the fields that answer the question. |
 | **6–20** | Show all of them, but pick 4–7 columns that matter. Never show all 50 fields. |
-| **21–100** | Show 5–10 representative rows **plus the breakdown**. Lead with a facets call or a `sumBy` grouping so the user sees the shape of the whole set, not a sample. |
-| **> 100** | **Do not page through it.** Summarize with counts and a breakdown, show 5–10 examples, and state the full `total` explicitly. Offer to narrow. |
+| **21–100** | Show 5–10 representative rows **plus the breakdown**. Lead with a facets call or a `sumBy` grouping so the user sees the shape of the whole set, not a sample. Offer Excel if they want every row. |
+| **> 100** | **Do not page through it.** Summarize with counts and a breakdown, show 5–10 examples, and state the full `total` explicitly. Offer to narrow. If they want every row and `total` is 1–999, export Excel (`action=output`) instead of paging. If `total ≥ 1000`, do **not** export — narrow first. |
 
 The hard reason for the last row: `limit` caps at 100 (`product-cn-*`, `reg-cn-*`) or 50
 (`yaohai-search`). A `total` of 243,104 can never be enumerated.
 Paging is for reading the *first few pages* of a manageable result set, not for exhausting
-a large one.
+a large one. Excel export uses the same 1000-row ceiling (`total` must be 1–999).
+
+## Excel when they want the full table
+
+Chat still follows the `total > 20` rule. When the user asks for a downloadable
+table (导出, Excel, xlsx, 完整清单) and `total` is **1–999**, call the same search
+tool again with `action: "output"` and give them `download_url` (plus `oss_url`).
+The file is on OSS; never stream or paste the binary. If `total` is 0 or **≥ 1000**,
+do not export — diagnose or narrow the filters first.
+`yaohai-global-search` has no Excel.
 
 ## Always state the total
 
@@ -292,7 +301,10 @@ Users otherwise assume the counts are comparable.
 ## Things not to do
 
 - **Don't dump raw JSON.** The user cannot read 50 fields × 20 rows.
-- **Don't page past ~3 pages.** If `total` is large, summarize instead.
+- **Don't page past ~3 pages.** If `total` is large, summarize instead. If they want
+  every row and `total` is 1–999, export Excel; if `total ≥ 1000`, narrow first.
+- **Don't skip Excel when they asked for a downloadable table** and `total` is 1–999.
+  Give the OSS `download_url`. Do not paste the spreadsheet.
 - **Don't present a sample as if it were the full set.** State `total` and how many you
   are showing.
 - **Don't invent a frontend URL.** Only include `detail_url` when it is a working API URL

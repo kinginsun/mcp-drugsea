@@ -5,7 +5,8 @@ description: >-
   One-stop search across DrugSea databases via the user-drugsea MCP tools
   (`china_new_drugs` and `generic_cn` are hidden — do not query them).
   Covers marketed vs pipeline routing, field meanings, accepted value types,
-  facet filtering, ATC therapeutic classes, and detail drill-down.
+  facet filtering, ATC therapeutic classes, detail drill-down, and xlsx export
+  (`action=output` → OSS `download_url`).
 ---
 
 # DrugSea / 药海遨游 one-stop search
@@ -285,8 +286,9 @@ re-query; each new condition gets its own window.
 1–999, call the same search tool again with `action: "output"`. The backend counts
 again, generates xlsx through the list API (`action=output`), uploads it to OSS, and
 returns `download_url` (plus `oss_url`). It never streams a binary file. If
-`total ≥ 1000`, narrow the query instead of exporting. Give the user the OSS link.
-`yaohai-global-search` does **not** support Excel.
+`total` is 0 or `≥ 1000`, narrow the query instead of exporting. Give the user the
+OSS link; do not paste the spreadsheet. `yaohai-global-search` does **not** support
+Excel.
 
 ## Standard workflow
 
@@ -301,7 +303,9 @@ returns `download_url` (plus `oss_url`). It never streams a binary file. If
    "Facets: SPA 条件筛选 vs MCP bucket-fetch").
 5. Search. Read `total`.
 6. If `total > 20`, do **not** dump the table — follow
-   [result-presentation.md](reference/result-presentation.md).
+   [result-presentation.md](reference/result-presentation.md). When the user wants
+   the full set (导出 / Excel / 完整清单) and `total` is 1–999, call the same
+   search tool again with `action: "output"` and give them `download_url`.
 7. Drill down with the detail tool only when the user needs one record. Prefer the
    encrypted `id` from search items. A raw 批准文号 / 受理号 is accepted as a
    fallback and resolves the same record.
