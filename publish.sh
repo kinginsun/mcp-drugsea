@@ -39,7 +39,7 @@ cd "$PKG_ROOT"
 PKG_NAME="$(node -p "require('./package.json').name")"
 EXPECTED_TOOLS=13                 # keep in sync with README "should list N tools"
 REMOVED_TOOLS=(yaohai-smart-search)  # regression guard: must never come back
-# yaohai-facets is the generic facet tool (58 dbs, 209 terms fields, generated
+# yaohai-facets is the generic facet tool (56 dbs, 196 terms fields, generated
 # from the drugsea frontend condition-filter map). Guarded so a refactor cannot
 # silently drop it while EXPECTED_TOOLS still adds up.
 REQUIRED_TOOLS=(yaohai-facets)
@@ -405,6 +405,14 @@ if [[ $SKIP_TESTS -eq 0 ]]; then
   else
     SUITE_OK=0
     warn "update-check suite reported failures"
+  fi
+
+  log "running hermetic query-sanitize + retrieval-window suites"
+  if node scripts/test-query-sanitize.mjs && node scripts/test-retrieval-window.mjs; then
+    ok "query-sanitize and retrieval-window suites passed"
+  else
+    SUITE_OK=0
+    warn "query-sanitize / retrieval-window suite reported failures"
   fi
 
   # The full suite needs a *live* token. Check it first so that a dead token is

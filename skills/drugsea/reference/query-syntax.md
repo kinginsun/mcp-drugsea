@@ -65,10 +65,13 @@ The **web list APIs** still skip unknown keys inside `make_es_condtions()` and c
 back to `match_all` (the whole database, HTTP 200). That is unchanged for the SPA.
 
 **MCP search does not.** mcp-drugsea (and the Yaohai MCP route after deploy) rewrite
-known aliases (`sponsor` → `study_sponsor`, `substance` → `active_substance`, …),
+known aliases (`sponsor` → `study_sponsor`, `item` → `drug_name` on `sales_cn`, …),
 echo `query_aliases` / `query_ignored` / `warnings`, and **error** if every user filter
 key is unknown. A call like `{"bogus_field_xyz": "阿托伐他汀"}` must fail — it must not
 return 243k rows.
+
+`zb_news` / `se_notice` / `drug_law` `publish_date` 已支持 `"YYYY-MM-DD to YYYY-MM-DD"`
+(not facetable). Confirm `total` dropped versus the unfiltered database.
 
 If an old session still silent-drops unknown keys, **reload the MCP server**. Confirm
 keys with `product-cn-fields` / `reg-cn-fields` or the `db-*.md` files. After a
@@ -166,7 +169,8 @@ Practical guidance:
 - Switch to `drug_name` / `general_name` / `enterprise` / `auth_num` / `slh` when you need
   precision or when you want `search_mode` to apply.
 - `item` is not available on every database — check the reference file. Where absent, use
-  the most specific key listed.
+  the most specific key listed. Exception: `sales_cn` / `sales_global` have no SPA `item`
+  box, but MCP rewrites `item` to `drug_name` (and `product` / `year` similarly).
 
 ## Other per-field rewrites worth knowing
 
@@ -180,6 +184,8 @@ These are applied by the route handlers, not by you:
 | `only_active=1` (`product_cn`) | Sets `in_sfda=1`, overriding anything you passed for `in_sfda`. |
 | `in_sfda=0` (`product_cn`) | **Honoured on the default `eslist` search** (invalid approvals only). Facet aggregations and `list_by_drug_name` / `list_by_manufacture` still drop `in_sfda=0`. |
 | `rows_excluded` (`reg_cn`) | Empty/falsy values are dropped. Send `1` to exclude 备案, `0` to include. |
+| `item` (`sales_cn`) | MCP aliases to `drug_name` (成分词). `product` → `xd_drug_name`; `year` → `years`. Prefer the panel keys. |
+| `item` (`sales_global`) | MCP aliases to `drug_name`. `product` → `drug_name`; `year` → `years`. |
 | `gj_passed_yizhi=1` (`product_cn`) | **Virtual OR field**, not stored: matches `is_passed_yizhi=1 OR is_orange_book=1`. Verified: 阿托伐他汀 → 117 rows. |
 
 ## Facet calls

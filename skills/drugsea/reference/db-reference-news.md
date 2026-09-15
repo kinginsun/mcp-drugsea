@@ -25,6 +25,8 @@ attachments on `yaohai-detail`. When `dp2_attachments_path` is present, prefer
 | Detail | `yaohai-detail` |
 
 > News/articles, not structured records. Keywords are free text, but `city` (省份) and `website` are facetable — use them to break a keyword search down by region or source.
+>
+> **`publish_date` 已支持 `"YYYY-MM-DD to YYYY-MM-DD"`**（不是 facet）。Live: 空查询 108,029；`2026-09-15 to 2026-09-15` → 1；`item=招标` + `2026-09-01 to 2026-09-15` → 61. Ingestion can lag 1–2 days behind the source sites.
 
 ### Search fields
 
@@ -40,7 +42,7 @@ attachments on `yaohai-detail`. When `dp2_attachments_path` is present, prefer
 ### Facet / filter fields
 
 `yaohai-facets` can aggregate the **2 `terms` fields** marked ✓ below.
-The other 1 are **filter-only** — valid in a `query`, but passing one in `fields` throws `Unknown facet field(s)` along with the valid list. That differs from search, where an unknown key is silently dropped and you get the whole database back.
+`publish_date` is **filter-only** — valid in a `query` as `"YYYY-MM-DD to YYYY-MM-DD"`, but passing it in `fields` throws `Unknown facet field(s)`.
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
@@ -48,7 +50,7 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 |---|---|---|---|---|
 | `city` | | ✓ | 省份 | multiple — exact string or `string[]`, copy the facet value verbatim |
 | `website` | | ✓ | 网站 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `publish_date` | | — filter only | 发布日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `publish_date` | ✓ | — filter only | 发布日期 | 已支持 `"YYYY-MM-DD to YYYY-MM-DD"`；a bare `"YYYY-MM-DD"` means that exact day |
 
 ---
 
@@ -65,7 +67,7 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 | Facets | `yaohai-facets` (2 fields) |
 | Detail | `yaohai-detail` |
 
-> Listed-company announcements. Free-text titles. The date filter is a UI picker and is **not** facetable; `se` (公告来源) and `is_transferred_to_references` are.
+> Listed-company announcements. Free-text titles. **`publish_date` 已支持 `"YYYY-MM-DD to YYYY-MM-DD"`**（不是 facet）。Live: 空查询 714,526；`2026-09-01 to 2026-09-15` → 398. `se` (公告来源) and `is_transferred_to_references` are facetable.
 
 ### Search fields
 
@@ -89,6 +91,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 |---|---|---|---|---|
 | `se` | | ✓ | 公告来源 | multiple — exact string or `string[]`, copy the facet value verbatim |
 | `is_transferred_to_references` | | ✓ | 文献标记 | multiple — exact string or `string[]`, copy the facet value verbatim |
+| `publish_date` | ✓ | — filter only | 发布日期 | 已支持 `"YYYY-MM-DD to YYYY-MM-DD"`；a bare `"YYYY-MM-DD"` means that exact day |
 
 ---
 
@@ -105,7 +108,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 | Facets | `yaohai-facets` (3 fields) |
 | Detail | `yaohai-detail` |
 
-> Regulations/policy documents. Free text. The date filter is **not** facetable; use `source` (法规来源), `main_category` (一级分类) or `category` (公告栏目) to break results down.
+> Regulations/policy documents. Free text. The date filter is **not** facetable and **not accepted by MCP search** (same `publish_date` rejection as `zb_news`). Use `source` (法规来源), `main_category` (一级分类) or `category` (公告栏目) to break results down.
 
 ### Search fields
 
@@ -120,7 +123,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 ### Facet / filter fields
 
 `yaohai-facets` can aggregate the **3 `terms` fields** marked ✓ below.
-The other 1 are **filter-only** — valid in a `query`, but passing one in `fields` throws `Unknown facet field(s)` along with the valid list. That differs from search, where an unknown key is silently dropped and you get the whole database back.
+`publish_date` is a SPA date picker only — it is **not** a valid MCP `query` key (sending it errors) and it is not facetable.
 
 `filter_type` is the frontend rendering hint; it tells you which value grammar to send back. ✓ = exercised live, blank = inferred from the frontend panel config.
 
@@ -129,7 +132,7 @@ The other 1 are **filter-only** — valid in a `query`, but passing one in `fiel
 | `source` | | ✓ | 法规来源 | multiple — exact string or `string[]`, copy the facet value verbatim |
 | `main_category` | | ✓ | 一级分类 | multiple — exact string or `string[]`, copy the facet value verbatim |
 | `category` | | ✓ | 公告栏目 | multiple — exact string or `string[]`, copy the facet value verbatim |
-| `publish_date` | | — filter only | 发布日期 | date — send `"YYYY-MM-DD to YYYY-MM-DD"`; a bare `"YYYY-MM-DD"` means that exact day |
+| `publish_date` | | — SPA picker only | 发布日期 | **not accepted by MCP search** — sending it errors. Use default date-desc order or `item`, then read the row field |
 
 ---
 

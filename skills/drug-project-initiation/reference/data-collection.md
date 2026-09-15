@@ -50,7 +50,8 @@ PubChem 化学/结构式见 [pubchem.md](pubchem.md)。
   「该做哪个规格」的结论。
 
 ### `sales_cn`（国内医院销售）
-- 只接受 `drug_name` / `company` / `product`，**不要用 `item`**。
+- 成分词用 `drug_name`，通用名用 `xd_drug_name` / `product`，企业用 `company`。
+  MCP 会把 `item` 改写成 `drug_name`、`product` 改写成 `xd_drug_name`、`year` 改写成 `years`，不要当成无效键。
 - 新上市品种通常 0 条。这是样本期不足，不是无需求——必须显式写明这一区分。
 
 ### `jicai`（集采）

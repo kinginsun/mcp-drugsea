@@ -274,9 +274,7 @@ Summarize what you installed:
 - Skill `echarts` installed at `<skills path>/echarts` — read its `SKILL.md` before generating charts.
 - Skill `drug-project-initiation` installed at `<skills path>/drug-project-initiation` — read its `SKILL.md` before 立项调研 / 可行性报告.
 - Verification results (gate 1: 13 tools; gate 2: all eleven checks — drugsea SKILL.md + 10 reference files, echarts SKILL.md + cheatsheet + template + script, drug-project-initiation SKILL.md + 4 reference files + report template + pubchem script + audit script; step 3: both calls OK).
-- Reminders: updates are automatic via `@latest` + server reload; the in-server
-  version notice appears on stderr / as a log notification when npm has a newer
-  release. Skill updates require re-running Step 2 (fresh `git clone` and
+- Reminders: `@latest` only applies on a **new** MCP process. After an npm publish, reload the connector; if the version is still stale, clear `~/.npm/_npx` (npm 10 has no `npm cache npx ls`) and reload again. Skill updates require re-running Step 2 (fresh `git clone` and
   re-copy of `skills/*`) since they are not on npm.
 
 ---
@@ -289,7 +287,7 @@ Summarize what you installed:
 | `YAOHAI_MCP_TOKEN must be a personal user token` | Not `ysk_` + 32 hex — have the user regenerate it (个人中心 → API Token) |
 | `401` / `Unauthorized` (even worded `invalid or missing X-Yaohai-Api-Key`) | Token expired/revoked — regenerate. The backend uses that header name in the error for *any* rejected credential; this client only sends `Authorization: Bearer`. If rotating, also `unset YAOHAI_MCP_TOKEN` in your shell so a stale export doesn't shadow the new value |
 | Forbidden on one specific database | Token inherits account permissions — check the subscription on db.drugsea.cn, not the MCP client |
-| `yaohai-facets` missing / `yaohai-smart-search` present | Stale npx cache serving an old version — confirm `args` contains `@latest`, then `npm cache npx ls` / `npm cache npx rm <key>` (or `rm -rf ~/.npm/_npx`) and reload the server |
+| `yaohai-facets` missing / `yaohai-smart-search` present | Stale npx cache serving an old version — confirm `args` contains `@latest`, then clear the npx cache (**npm 11:** `npm cache npx ls` / `npm cache npx rm <key>`; **npm 10:** `rm -rf ~/.npm/_npx`) and **reload** the MCP server. A running process keeps the old tool list until it is restarted. |
 | `mcp-drugsea: command not found` under npx | You ran the smoke test inside this repo's source dir — run it elsewhere, or `npm install && npm run build` then `node dist/index.js` |
 | Empty/encrypted payload from product/reg GET routes | Keep default `YAOHAI_USE_MCP_LIST=true` (MCP POST). Set `YAOHAI_BASE_URL=https://db.drugsea.cn/api` |
 | Search tools fail with `HTTP 504` / `HTML, not JSON` / `Unexpected token '<'` | `db3.drugsea.cn` gateway times out around 50s. Use `YAOHAI_BASE_URL=https://db.drugsea.cn/api`. If already on db, retry; do not `--yes` a publish over a hang |

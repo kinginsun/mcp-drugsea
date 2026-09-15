@@ -381,14 +381,14 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 | Facets | `yaohai-facets` (6, static lists) |
 | Detail | — (no detail) |
 
-> **Variety-level, not transaction-level**, and `has_detail: false`. Catalog `search_fields` match the SPA「关键词查询」panel. **`item` and `product` are not keys** — they are silently dropped (full-DB `total`). ATC facet renders as `letter:中文`; send the bare letter. Checkbox「精确查询」is `exact: 1` (not a keyword box).
+> **Variety-level, not transaction-level**, and `has_detail: false`. Catalog `search_fields` match the SPA「关键词查询」panel. MCP aliases `item` → `drug_name` (成分词), `product` → `xd_drug_name` (通用名), `year` → `years` — they are **not** silent-dropped. Prefer the panel keys; `query_aliases` echoes the rewrite. ATC facet renders as `letter:中文`; send the bare letter. Checkbox「精确查询」is `exact: 1` (not a keyword box).
 
 ### Search fields
 
 | Key | Verified | Label |
 |---|---|---|
-| `drug_name` | ✓ | 成分词(不含酸根、盐和剂型) |
-| `xd_drug_name` | | 通用名(含酸根、盐和剂型) |
+| `drug_name` | ✓ | 成分词(不含酸根、盐和剂型)；MCP also accepts `item` → this key |
+| `xd_drug_name` | ✓ | 通用名(含酸根、盐和剂型)；MCP also accepts `product` → this key |
 | `company` | ✓ | 企业名称 |
 | `xd_company` | | 持证商(XD) |
 | `dosage_form` | | 剂型 |
@@ -419,6 +419,14 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 {"query": {"drug_name": "阿托伐他汀"}, "limit": 20}
 ```
 
+*`item` is rewritten to `drug_name` and returns the same 2 rows (`query_aliases: {"item":"drug_name"}`). Prefer `drug_name`.*
+
+**By generic name (`product` → `xd_drug_name`) — 4 rows**
+
+```jsonc
+{"query": {"xd_drug_name": "阿托伐他汀"}, "limit": 20}
+```
+
 **By company — 5 rows**
 
 ```jsonc
@@ -431,10 +439,10 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 {"query": {"drug_name": "阿托伐他汀", "exact": 1}, "limit": 20}
 ```
 
-**✗ WRONG — `item` / `product` are not `sales_cn` keys; silently returns all 8,835,947 rows**
+**✗ WRONG — a key that is not a panel field and not an alias still errors (does not dump the full DB)**
 
 ```jsonc
-{"query": {"item": "阿托伐他汀"}, "limit": 20}
+{"query": {"not_a_field": "阿托伐他汀"}, "limit": 20}
 ```
 
 ---
@@ -596,7 +604,7 @@ Every field here is facetable. Note that `yaohai-facets` **throws** on an unknow
 | Facets | `yaohai-facets` (2, static lists) |
 | Detail | — (no detail) |
 
-> `has_detail: false` — the list row is all you get.
+> `has_detail: false` — the list row is all you get. MCP aliases `item` / `product` → `drug_name` and `year` → `years`.
 
 ### Search fields
 

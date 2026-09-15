@@ -52,7 +52,7 @@ If you are unsure which database to use, call `yaohai-catalog` (optionally with
 | `reg-cn-facets` | Facet distributions for `reg_cn` | `query?`, **`facets` (required)** |
 | `reg-cn-detail` | One `reg_cn` record | `id` (encrypted preferred; 受理号 fallback) |
 | `yaohai-search` | Any of the other 60 databases | **`dbname`**, `query`, `limit` (≤50), `offset`, `action=output` |
-| `yaohai-facets` | Facet distributions for **58** databases (`/in` + dedicated-route 条件筛选) | `dbname`, `fields?`, `query?` |
+| `yaohai-facets` | Facet distributions for **56** databases (`/in` + dedicated-route 条件筛选) | `dbname`, `fields?`, `query?` |
 | `yaohai-detail` | One record from any database | `dbname`, `id` |
 | ~~`yaohai-smart-search`~~ | **Do not use** — route yourself | — |
 
@@ -82,11 +82,6 @@ versions and cover `product_cn` / `reg_cn`. Do not guess filter values to work a
 and do not report a facet breakdown you could not actually fetch — say which dimension was
 unavailable (see
 [result-presentation.md](reference/result-presentation.md#supported-false-is-not-an-error)).
-
-As of 2026-09-06 the session connected to this workspace still listed
-`yaohai-smart-search`, i.e. **≤ v0.2.1** — so `yaohai-facets` was not callable through it.
-Every `yaohai-facets` result quoted in this skill was captured by spawning the local v0.4.0
-build directly.
 
 ## Facets: SPA 条件筛选 vs MCP bucket-fetch
 
@@ -357,14 +352,19 @@ Excel.
   key is unknown **errors** instead of returning the whole database. The web list APIs
   still silent-drop. If an old session still returns 243k rows for `bogus_field`,
   **reload the MCP server**.
+- **`zb_news` / `se_notice` / `drug_law` `publish_date` 已支持 `"YYYY-MM-DD to YYYY-MM-DD"`。**
+  Not facetable (`yaohai-facets` still throws if you put it in `fields`). Live: `zb_news`
+  `2026-09-15 to 2026-09-15` → 1; `se_notice` `2026-09-01 to 2026-09-15` → 398;
+  `drug_law` same range → 68. Ingestion can lag 1–2 days behind the source sites.
 - **`zhaobiao` is Elasticsearch (`/es/zhaobiao/list`), not MySQL.** Keyword keys
   match the SPA panel: `item`, `category`, `drug_name`, `manufacture`, `auth_num`,
   `dosage_form`, `specification`, `quality_level`, `switch`, `bid_price`. Prefer
   `manufacture`; MCP aliases `company` → `manufacture`.
 - **`sales_cn` keyword keys match the SPA panel:** `drug_name` (成分词),
   `xd_drug_name` (通用名), `company`, `xd_company`, `dosage_form`, `xd_dosage_form`,
-  `specification`, `xd_specification`. `item` and `product` are not keys.
-  「精确查询」is `exact: 1`.
+  `specification`, `xd_specification`. MCP aliases `item` → `drug_name`,
+  `product` → `xd_drug_name`, `year` → `years` (`query_aliases` in the response).
+  Prefer the panel keys. 「精确查询」is `exact: 1`.
 - **`ct_cn` keyword keys match the SPA panel:** `item`, `PI`, `PI_company`, `title`,
   `drug_name`, `study_sponsor`, `indication`, `register_num`. Prefer `study_sponsor`;
   MCP aliases `sponsor` → `study_sponsor`.

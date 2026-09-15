@@ -26,7 +26,7 @@ npx -y @kinginsun/mcp-drugsea@latest
 
 How updates reach you depends on how you installed the server.
 
-### 1. `npx` with `@latest` — automatic (recommended)
+### 1. `npx` with `@latest` — reload after each publish (recommended)
 
 The MCP configs in this README use:
 
@@ -34,9 +34,15 @@ The MCP configs in this README use:
 "args": ["-y", "@kinginsun/mcp-drugsea@latest"]
 ```
 
-`@latest` makes npx resolve the newest published version from the registry on every launch (registry metadata is cached locally for up to ~5 minutes), so you pick up new releases just by reloading the MCP server. No action needed.
+`@latest` tells npx to resolve the newest published version **when a new process starts**. It does **not** upgrade a server that is already running, and it does **not** always invalidate an existing npx cache directory.
 
-If your config uses the **bare package name** (`"-y", "@kinginsun/mcp-drugsea"`), npx keys its cache by the exact package argument and may keep serving a stale version. Add `@latest` and reload.
+After a release: **reload / reconnect the MCP connector** in the client. If the client still reports the old version:
+
+1. Stop the running MCP process.
+2. Clear the npx cache (below) and launch once so npx re-fetches.
+3. Reload the connector again.
+
+If your config uses the **bare package name** (`"-y", "@kinginsun/mcp-drugsea"`), npx keys its cache by that exact argument and is even more likely to keep a stale tarball. Add `@latest`.
 
 ### 2. Global install — manual
 
@@ -49,14 +55,25 @@ npm ls -g @kinginsun/mcp-drugsea      # confirm the new version
 
 ### 3. Stuck on an old version? Clear the npx cache
 
-`npm cache clean --force` does **not** touch the npx cache — that is the usual reason an update appears not to take effect. npm 11 has dedicated subcommands:
+`npm cache clean --force` does **not** touch the npx cache — that is the usual reason an update appears not to take effect. npm **11+** has dedicated subcommands:
 
 ```bash
 npm cache npx ls                       # list cached npx entries
 npm cache npx rm <key>                 # remove the stale entry for this package
 ```
 
-Older npm versions: remove the cache directory manually (`rm -rf ~/.npm/_npx`; on Windows `%LOCALAPPDATA%\npm-cache\_npx`).
+npm **10** (still common on macOS) has **no** `npm cache npx` command. List and delete the cache directories yourself:
+
+```bash
+ls ~/.npm/_npx                         # each hash dir is one npx install
+rm -rf ~/.npm/_npx                     # nuclear: next npx -y @…@latest re-fetches
+```
+
+On Windows the same tree is `%LOCALAPPDATA%\npm-cache\_npx`.
+
+macOS has no GNU `timeout(1)`. To cap a warmup `npx` run, use
+`perl -e 'alarm 60; exec @ARGV' npx -y @kinginsun/mcp-drugsea@latest --help`
+(or `gtimeout` from coreutils). After a successful fetch, **reload the MCP connector** — the old Node process keeps serving until it is restarted.
 
 ### In-server update notice
 
@@ -365,7 +382,7 @@ After reloading MCP servers in the client, ask the agent:
 | Empty/encrypted payload from product/reg GET | Keep default `YAOHAI_USE_MCP_LIST=true` (MCP POST). Set `YAOHAI_BASE_URL=https://db.drugsea.cn/api` |
 | Search tools fail with `HTTP 504` / HTML body / `Unexpected token '<'` | `db3.drugsea.cn` gateway times out around 50s. Use `YAOHAI_BASE_URL=https://db.drugsea.cn/api`. If already on db, retry; do not publish over a hang |
 | TLS errors on some hosts | Set `YAOHAI_VERIFY_SSL=false` |
-| Client keeps running an old version | npx cache is keyed by the exact package arg — use `@latest` in `args`, or clear it with `npm cache npx ls` / `npm cache npx rm <key>`. See [Updating](#updating). |
+| Client keeps running an old version | npx cache + a still-running MCP process. Use `@latest`, reload the connector, and on npm 10 delete `~/.npm/_npx` (npm 11: `npm cache npx ls` / `rm`). See [Updating](#updating). |
 | Global install never updates | `npm install -g` pins the version — run `npm update -g @kinginsun/mcp-drugsea` |
 | No update notice appears | Expected when you are already current, when the registry is unreachable (check fails silently), or when `YAOHAI_MCP_UPDATE_CHECK=0`. Clients also need the server's `logging` capability, so check the MCP server log panel for the stderr line as well. |
 

@@ -31,6 +31,7 @@ export const CONTROL_KEYS = new Set([
 /**
  * Common wrong keys → the key the backend actually reads.
  * Applied only when the target key is not already set.
+ * Keep in sync with PHP `yaohai_mcp_aliases()` in drugsea_api mcp.php.
  */
 export const QUERY_ALIASES: Record<string, Record<string, string>> = {
   product_cn: { enterprise: "manufacture", company: "manufacture" },
@@ -42,6 +43,8 @@ export const QUERY_ALIASES: Record<string, Record<string, string>> = {
   zhaobiao: { company: "manufacture" },
   shuomingshu: { company: "manufacture" },
   cn_company: { company: "manufacture", enterprise: "manufacture" },
+  sales_cn: { item: "drug_name", product: "xd_drug_name", year: "years" },
+  sales_global: { item: "drug_name", product: "drug_name", year: "years" },
 };
 
 const PRODUCT_CN_EXTRA = [
@@ -129,6 +132,23 @@ const KNOWN_FILTERS: Record<string, readonly string[]> = {
     "production_range",
     "province",
   ],
+  sales_cn: [
+    "drug_name",
+    "xd_drug_name",
+    "company",
+    "xd_company",
+    "dosage_form",
+    "xd_dosage_form",
+    "specification",
+    "xd_specification",
+    "years",
+    "quarter",
+    "drug_type",
+    "administration_route",
+    "ATC_code",
+    "city",
+  ],
+  sales_global: ["drug_name", "company", "years", "source", "ATC_code", "brand_name"],
 };
 
 export type SanitizedQuery = {
